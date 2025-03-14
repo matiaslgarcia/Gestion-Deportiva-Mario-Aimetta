@@ -43,8 +43,8 @@ export function LocationDetail({ locationId, onBack }: LocationDetailProps) {
     fetchGroups();
   }, [locationId]);
 
-  if (loading) return <div>Loading location...</div>;
-  if (!location) return <div>Location not found</div>;
+  if (loading) return <div>Cargando Sede...</div>;
+  if (!location) return <div>Sede no encontrada</div>;
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 sm:p-8">

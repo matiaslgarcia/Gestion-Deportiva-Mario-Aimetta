@@ -22,6 +22,10 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
   // Estado para mostrar/ocultar filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
+  // Paginado
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   useEffect(() => {
     const fetchGroup = async () => {
       const { data, error } = await supabase
@@ -93,10 +97,21 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     return true;
   });
 
+  // Reinicia la página actual cuando cambian los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dniFilter, nameFilter, paymentFilter]);
+
+  const totalPages = Math.ceil(filteredClients.length / rowsPerPage);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
   if (loading)
-    return <div className="p-4 text-center text-sm">Loading group...</div>;
+    return <div className="p-4 text-center text-sm">Cargando Grupo...</div>;
   if (!group)
-    return <div className="p-4 text-center text-sm">Group not found</div>;
+    return <div className="p-4 text-center text-sm">Grupo no encontrado</div>;
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 md:p-8">
@@ -166,7 +181,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {filteredClients.map(client => (
+            {paginatedClients.map(client => (
               <tr key={client.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
                   {client.name} {client.surname}
@@ -180,7 +195,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                 </td>
               </tr>
             ))}
-            {filteredClients.length === 0 && (
+            {paginatedClients.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
                   No se encontraron alumnos.
@@ -190,6 +205,28 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           </tbody>
         </table>
       </div>
+      {/* Controles de paginado */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 }

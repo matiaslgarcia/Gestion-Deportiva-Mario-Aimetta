@@ -22,6 +22,10 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
   // Estado para mostrar/ocultar filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
+  // Paginado
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -78,6 +82,17 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
     return true;
   });
 
+  // Reinicia la página al cambiar los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [nameFilter, locationFilter]);
+
+  const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
+  const paginatedGroups = filteredGroups.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
   const handleDeleteClick = (id: string) => {
     setDeleteId(id);
     setShowConfirm(true);
@@ -109,7 +124,7 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
           {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
         </button>
       </div>
-      {/* Filtros: se muestran siempre en desktop y en mobile solo si se activan */}
+      {/* Filtros */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input
@@ -133,7 +148,7 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
           </select>
         </div>
       </div>
-      {/* Tabla con texto responsivo */}
+      {/* Tabla */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
           <thead className="bg-gray-50">
@@ -147,7 +162,7 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredGroups.map((group) => (
+            {paginatedGroups.map((group) => (
               <tr
                 key={group.id}
                 onClick={() => onView(group.id)}
@@ -184,7 +199,7 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
                 </td>
               </tr>
             ))}
-            {filteredGroups.length === 0 && (
+            {paginatedGroups.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-500">
                   No se encontraron grupos.
@@ -194,6 +209,28 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
           </tbody>
         </table>
       </div>
+      {/* Controles de paginado */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar este grupo?"

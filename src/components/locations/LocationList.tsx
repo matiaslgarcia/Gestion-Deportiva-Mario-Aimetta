@@ -20,6 +20,10 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
   // Estado para filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
+  // Paginado
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -60,16 +64,26 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
   const filteredLocations = locations.filter(location => {
     if (nameFilter && !location.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
     if (addressFilter && !location.address.toLowerCase().includes(addressFilter.toLowerCase())) return false;
-    // Si se necesita filtrado por grupo, se agregaría aquí
+    // Filtrado por grupo si se requiere
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [nameFilter, addressFilter, groupFilter]);
+
+  const totalPages = Math.ceil(filteredLocations.length / rowsPerPage);
+  const paginatedLocations = filteredLocations.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   if (loading) {
     return <div>Loading locations...</div>;
   }
 
   return (
-    <div className="p-4 md:p-6">
+    <div>
       {/* Botón para filtros en mobile */}
       <div className="mb-4 md:hidden">
         <button
@@ -117,8 +131,8 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
               <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredLocations.map(location => (
+          <tbody className="bg-white divide-y divide-gray-300">
+            {paginatedLocations.map(location => (
               <tr key={location.id} onClick={() => onView(location.id)}>
                 <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.name}</td>
                 <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.address}</td>
@@ -148,6 +162,28 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
           </tbody>
         </table>
       </div>
+      {/* Controles de paginado */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar esta sede?"

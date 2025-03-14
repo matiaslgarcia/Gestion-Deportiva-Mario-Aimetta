@@ -36,6 +36,10 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
   // Estado para filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
+  // Paginado
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -130,6 +134,16 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
     if (paymentFilter !== 'all' && status.toLowerCase() !== paymentFilter) return false;
     return true;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dniFilter, nameFilter, locationFilter, paymentFilter, groupFilter]);
+
+  const totalPages = Math.ceil(filteredClients.length / rowsPerPage);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
 
   const handleDeleteClick = (id: string) => {
     setDeleteId(id);
@@ -227,8 +241,8 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
               <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredClients.map(client => (
+          <tbody className="bg-white divide-y divide-gray-300">
+            {paginatedClients.map(client => (
               <tr key={client.id} onClick={() => client.id && onView(client.id)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                 <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {client.name} {client.surname}
@@ -271,9 +285,38 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
                 </td>
               </tr>
             ))}
+            {paginatedClients.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-3 py-4 text-center text-sm text-gray-500">
+                  No se encontraron alumnos.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+      {/* Controles de paginado */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-700">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar este alumno?"

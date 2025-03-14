@@ -70,6 +70,7 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     fetchClient();
   }, [clientId]);
 
+  // Actualiza el registro a "Pagado"
   const handleUpdatePayment = async () => {
     try {
       const { error } = await supabase
@@ -86,6 +87,26 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     } catch (err) {
       console.error(err);
       toast.error('Error actualizando el pago');
+    }
+  };
+
+  // Actualiza el registro a "No Pagado" (last_payment en null)
+  const handleMarkNotPaid = async () => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ last_payment: null })
+        .eq('id', clientId);
+      if (error) {
+        console.error('Error actualizando estado de pago:', error);
+        toast.error('Error actualizando estado de pago');
+      } else {
+        toast.success('Estado de pago actualizado a No Pagado');
+        fetchClient();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error actualizando estado de pago');
     }
   };
 
@@ -150,12 +171,18 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
           </dd>
         </div>
       </dl>
-      <div className="mt-6 flex justify-center sm:justify-start">
+      <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
         <button
           onClick={handleUpdatePayment}
           className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
         >
           Actualizar Pago
+        </button>
+        <button
+          onClick={handleMarkNotPaid}
+          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+        >
+          Marcar como No Pagado
         </button>
       </div>
     </div>
