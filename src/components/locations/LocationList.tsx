@@ -2,22 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Location } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
-import { Edit, Trash } from 'lucide-react';
+import { Edit, Trash, Filter, Plus } from 'lucide-react';
 
 interface LocationListProps {
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onAdd: () => void;
 }
 
-export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
+export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   // Filtros
   const [nameFilter, setNameFilter] = useState('');
   const [addressFilter, setAddressFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
-  // Estado para filtros en mobile
+  // Estado para mostrar/ocultar filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
   // Paginado
@@ -83,14 +84,22 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
   }
 
   return (
-    <div>
-      {/* Botón para filtros en mobile */}
-      <div className="mb-4 md:hidden">
+    <div className="p-4">
+      {/* Mobile header: icon buttons para filtros y agregar */}
+      <div className="flex items-center justify-between mb-4 md:hidden">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded"
+          className="p-2 bg-indigo-600 text-white rounded-full"
+          aria-label="Toggle Filters"
         >
-          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          <Filter className="h-6 w-6" />
+        </button>
+        <button
+          onClick={onAdd}
+          className="p-2 bg-green-600 text-white rounded-full"
+          aria-label="Add Location"
+        >
+          <Plus className="h-6 w-6" />
         </button>
       </div>
       {/* Filtros */}
@@ -119,71 +128,121 @@ export function LocationList({ onView, onEdit, onDelete }: LocationListProps) {
           />
         </div>
       </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
-              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Dirección</th>
-              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Teléfono</th>
-              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-300">
-            {paginatedLocations.map(location => (
-              <tr key={location.id} onClick={() => onView(location.id)}>
-                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.name}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.address}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.phone}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(location.id);
-                    }}
-                    className="mr-2 text-indigo-600 hover:text-indigo-900"
-                  >
-                    <Edit className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick(location.id);
-                    }}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <Trash className="h-5 w-5" />
-                  </button>
-                </td>
+      {/* Vista de tabla para tablet y desktop */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Dirección</th>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Teléfono</th>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {/* Controles de paginado */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span className="text-sm text-gray-700">
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-300">
+              {paginatedLocations.map(location => (
+                <tr key={location.id} onClick={() => onView(location.id)} className="hover:bg-gray-50">
+                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.name}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.address}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.phone}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(location.id);
+                      }}
+                      className="mr-2 text-indigo-600 hover:text-indigo-900"
+                    >
+                      <Edit className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(location.id);
+                      }}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <Trash className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+        {/* Paginado para desktop */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Vista en tarjetas para mobile */}
+      <div className="block md:hidden">
+        {paginatedLocations.map(location => (
+          <div key={location.id} className="bg-white shadow rounded p-4 mb-4">
+            <h2 className="font-bold text-gray-900">{location.name}</h2>
+            <p className="text-gray-700"><strong>Dirección:</strong> {location.address}</p>
+            <p className="text-gray-700"><strong>Teléfono:</strong> {location.phone}</p>
+            <div className="flex space-x-2 mt-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(location.id); }}
+                className="text-indigo-600 hover:text-indigo-900"
+                aria-label="Editar"
+              >
+                <Edit className="h-5 w-5" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDeleteClick(location.id); }}
+                className="text-red-600 hover:text-red-900"
+                aria-label="Eliminar"
+              >
+                <Trash className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {/* Paginado para mobile */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
+      </div>
+      
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar esta sede?"

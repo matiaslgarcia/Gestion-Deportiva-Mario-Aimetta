@@ -1,4 +1,3 @@
-// PageHeader.tsx
 import React from 'react';
 
 interface PageHeaderProps {
@@ -15,7 +14,8 @@ export function PageHeader({ title, description, onAdd, addButtonText }: PageHea
         <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
         <p className="mt-2 text-base text-gray-600">{description}</p>
       </div>
-      <div className="mt-4 sm:mt-0 sm:ml-6">
+      {/* Botón visible solo en tablet y desktop */}
+      <div className="mt-4 sm:mt-0 sm:ml-6 hidden md:block">
         <button
           type="button"
           onClick={onAdd}

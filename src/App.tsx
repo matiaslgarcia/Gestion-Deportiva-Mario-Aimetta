@@ -115,6 +115,7 @@ function App() {
                 onView={(id) => { setSelectedId(id); setView('detail'); }}
                 onEdit={(id) => { setSelectedId(id); setView('form'); }}
                 onDelete={handleDeleteLocation}
+                onAdd={handleAdd}
               />
             </>
           );
@@ -147,6 +148,7 @@ function App() {
                 onView={(id) => { setSelectedId(id); setView('detail'); }}
                 onEdit={(id) => { setSelectedId(id); setView('form'); }}
                 onDelete={handleDeleteClient}
+                onAdd={handleAdd}
               />
             </>
           );
@@ -179,6 +181,7 @@ function App() {
                 onView={handleGroupView}
                 onEdit={handleGroupEdit}
                 onDelete={handleDeleteGroup}
+                onAdd={handleAdd}
               />
             </>
           );
