@@ -1,4 +1,3 @@
-// GroupList.tsx
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Group, Location } from '../../types';
@@ -20,6 +19,8 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
   // Filtros
   const [nameFilter, setNameFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  // Estado para mostrar/ocultar filtros en mobile
+  const [showFilters, setShowFilters] = useState(false);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -99,20 +100,29 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
 
   return (
     <div className="p-4 md:p-6">
-      {/* Filtros */}
-      <div className="mb-4 p-4 bg-gray-50 rounded shadow-sm">
+      {/* Botón para filtros en mobile */}
+      <div className="mb-4 md:hidden">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded"
+        >
+          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+        </button>
+      </div>
+      {/* Filtros: se muestran siempre en desktop y en mobile solo si se activan */}
+      <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input
             type="text"
             placeholder="Filtrar por Nombre"
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
-            className="border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="">Todas las Sedes</option>
             {locations.map((loc) => (
@@ -123,18 +133,17 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
           </select>
         </div>
       </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto shadow rounded">
-        <table className="min-w-full divide-y divide-gray-300">
+      {/* Tabla con texto responsivo */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Nombre</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Horario</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Día(s)</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Sede</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Clientes</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Acciones</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Horario</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Día(s)</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Sede</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Clientes</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -144,16 +153,16 @@ export function GroupList({ onView, onEdit, onDelete }: GroupListProps) {
                 onClick={() => onView(group.id)}
                 className="hover:bg-gray-50 transition-colors cursor-pointer"
               >
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{group.name}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{group.horario}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{group.day_of_week}</td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{group.name}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{group.horario}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{group.day_of_week}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {group.locations ? group.locations.name : '-'}
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {clientCountMap[group.id] || 0}
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

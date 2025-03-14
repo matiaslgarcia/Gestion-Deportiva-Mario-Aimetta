@@ -202,8 +202,8 @@ function App() {
     <div className="flex h-screen bg-gray-50">
       <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
       <div className="flex-1 overflow-auto flex justify-center">
-      <main className="py-6 px-4 sm:px-6 lg:px-8 w-full max-w-7xl">
-      <div className="bg-white shadow rounded-lg p-6 transition-all duration-300">
+        <main className="py-6 px-4 sm:px-6 lg:px-8 mt-10 w-full max-w-7xl">
+          <div className="bg-white shadow rounded-lg p-6 transition-all duration-300">
             {renderContent()}
           </div>
         </main>

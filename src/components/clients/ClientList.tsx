@@ -33,6 +33,8 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
   const [locationFilter, setLocationFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('all'); // all, pagado, pendiente
   const [groupFilter, setGroupFilter] = useState('');
+  // Estado para filtros en mobile
+  const [showFilters, setShowFilters] = useState(false);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -96,7 +98,6 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
     return age;
   };
 
-  // Determina el estado de pago a mostrar (usado para filtrar)
   const getPaymentStatus = (client: ExtendedClient) => {
     if (client.last_payment && new Date(client.last_payment) >= new Date(client.payment_date)) {
       return 'pagado';
@@ -154,8 +155,17 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
 
   return (
     <div className="p-4">
+      {/* Botón para filtros en mobile */}
+      <div className="mb-4 md:hidden">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded"
+        >
+          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+        </button>
+      </div>
       {/* Filtros */}
-      <div className="mb-4 p-4 bg-gray-50 rounded shadow-sm">
+      <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           <input
             type="text"
@@ -203,49 +213,43 @@ export function ClientList({ onView, onEdit, onDelete }: ClientListProps) {
       </div>
 
       {/* Tabla */}
-      <div className="overflow-x-auto shadow rounded">
-        <table className="min-w-full divide-y divide-gray-300">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Nombre</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">DNI</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Teléfono</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Edad</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Sede(s)</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Grupo(s)</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Estado de Pago</th>
-              <th className="px-3 py-3.5 text-left text-xs sm:text-sm font-semibold text-gray-900">Acciones</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">DNI</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Teléfono</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Edad</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Sede(s)</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Grupo(s)</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Estado de Pago</th>
+              <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredClients.map(client => (
               <tr key={client.id} onClick={() => client.id && onView(client.id)} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {client.name} {client.surname}
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                  {client.dni}
-                </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                  {client.phone}
-                </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                  {calculateAge(client.birth_date)}
-                </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{client.dni}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{client.phone}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">{calculateAge(client.birth_date)}</td>
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {client.client_locations && client.client_locations.length > 0
                     ? client.client_locations.map(cl => cl.locations?.name).join(', ')
                     : '-'}
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   {client.client_groups && client.client_groups.length > 0
                     ? client.client_groups.map(cg => cg.groups?.name).join(', ')
                     : '-'}
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
                 </td>
-                <td className="px-3 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

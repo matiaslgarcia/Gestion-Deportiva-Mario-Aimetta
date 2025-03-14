@@ -19,6 +19,8 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
   const [dniFilter, setDniFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  // Estado para mostrar/ocultar filtros en mobile
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const fetchGroup = async () => {
@@ -99,15 +101,10 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
   return (
     <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 md:p-8">
       <div className="flex items-center mb-6">
-        <button
-          onClick={onBack}
-          className="text-gray-500 hover:text-gray-700 mr-4"
-        >
+        <button onClick={onBack} className="text-gray-500 hover:text-gray-700 mr-4">
           <ChevronRight className="h-6 w-6 transform rotate-180" />
         </button>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-          {group.name}
-        </h2>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{group.name}</h2>
       </div>
       <div className="mb-4 space-y-1">
         <p className="text-gray-700 text-sm sm:text-base">
@@ -117,12 +114,20 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           <span className="font-semibold">Día(s):</span> {group.day_of_week}
         </p>
         <p className="text-gray-700 text-sm sm:text-base">
-          <span className="font-semibold">Sede:</span>{' '}
-          {group.locations ? group.locations.name : '-'}
+          <span className="font-semibold">Sede:</span> {group.locations ? group.locations.name : '-'}
         </p>
       </div>
-      <div className="mb-4 p-4 bg-gray-50 rounded">
-        {/* Sección de filtros */}
+      {/* Botón para mostrar/ocultar filtros en mobile */}
+      <div className="mb-4 md:hidden">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="px-4 py-2 bg-indigo-600 text-white rounded"
+        >
+          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+        </button>
+      </div>
+      {/* Filtros: se muestran siempre en desktop y en mobile si se activa */}
+      <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
             type="text"
@@ -149,25 +154,15 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           </select>
         </div>
       </div>
-      <h3 className="text-lg sm:text-xl font-semibold mb-4">
-        Alumnos en este Grupo
-      </h3>
+      <h3 className="text-lg sm:text-xl font-semibold mb-4">Alumnos en este Grupo</h3>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                Nombre
-              </th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                DNI
-              </th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                Teléfono
-              </th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">
-                Estado de Pago
-              </th>
+              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Nombre</th>
+              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">DNI</th>
+              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Teléfono</th>
+              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Estado de Pago</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -176,28 +171,18 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                 <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
                   {client.name} {client.surname}
                 </td>
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                  {client.dni}
-                </td>
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                  {client.phone}
-                </td>
+                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.dni}</td>
+                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
                 <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
                   <PaymentStatusBadge
-                    statusColor={getPaymentStatusColor(
-                      client.payment_date,
-                      client.last_payment
-                    )}
+                    statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)}
                   />
                 </td>
               </tr>
             ))}
             {filteredClients.length === 0 && (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500"
-                >
+                <td colSpan={4} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
                   No se encontraron alumnos.
                 </td>
               </tr>
