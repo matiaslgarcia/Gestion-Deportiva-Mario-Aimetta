@@ -32,7 +32,12 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     <>
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between bg-white shadow-md p-4 fixed w-full top-0 left-0 z-40">
-        <img src={logo} alt="Logo" className="h-10" />
+        <img 
+          src={logo} 
+          alt="Logo" 
+          className="h-14 cursor-pointer" 
+          onClick={() => onTabChange('clients')}
+        />
         <button onClick={() => setIsOpen(true)} aria-label="Abrir menú">
           <Menu className="h-6 w-6 text-gray-800" />
         </button>
@@ -48,7 +53,15 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="relative bg-white w-64 h-full shadow-lg">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center">
-              <img src={logo} alt="Logo" className="h-12" />
+              <img 
+                src={logo} 
+                alt="Logo" 
+                className="h-14 cursor-pointer" 
+                onClick={() => {
+                  onTabChange('clients');
+                  setIsOpen(false);
+                }}
+              />
             </div>
             <button onClick={() => setIsOpen(false)} aria-label="Cerrar menú">
               <X className="h-6 w-6 text-gray-800" />
@@ -79,7 +92,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-white shadow-lg">
         <div className="flex items-center p-4 border-b">
-          <img src={logo} alt="Logo" className="h-20" />
+          <img src={logo} alt="Logo" className="h-20 cursor-pointer" onClick={() => onTabChange('clients')} />
         </div>
         <nav className="p-4 flex-1 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
