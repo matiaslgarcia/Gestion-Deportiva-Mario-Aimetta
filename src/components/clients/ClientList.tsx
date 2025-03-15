@@ -165,7 +165,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
   };
 
   if (loading) {
-    return <div className="p-4 text-center">Loading clients...</div>;
+    return <div className="p-4 text-center">Cargando alumnos...</div>;
   }
 
   return (

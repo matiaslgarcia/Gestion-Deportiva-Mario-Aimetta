@@ -111,7 +111,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
     setDeleteId(null);
   };
 
-  if (loading) return <div className="p-4 text-center">Loading groups...</div>;
+  if (loading) return <div className="p-4 text-center">Cargando grupos...</div>;
 
   return (
     <div className="p-4 md:p-6">

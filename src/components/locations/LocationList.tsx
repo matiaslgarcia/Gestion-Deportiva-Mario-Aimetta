@@ -80,7 +80,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
   );
 
   if (loading) {
-    return <div>Loading locations...</div>;
+    return <div>Cargando Sedes...</div>;
   }
 
   return (
@@ -117,13 +117,6 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
             placeholder="Filtrar por Dirección"
             value={addressFilter}
             onChange={(e) => setAddressFilter(e.target.value)}
-            className="border rounded p-2 text-sm"
-          />
-          <input
-            type="text"
-            placeholder="Filtrar por Grupo"
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
             className="border rounded p-2 text-sm"
           />
         </div>

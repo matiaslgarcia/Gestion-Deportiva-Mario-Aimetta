@@ -9,7 +9,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, onAdd, addButtonText }: PageHeaderProps) {
   return (
-    <header className="flex flex-col sm:flex-row items-center justify-between py-4 px-6 bg-white shadow rounded-md">
+    <header className="flex flex-col sm:flex-row items-center justify-between mt-4 py-4 px-6 bg-white shadow rounded-md">
       <div className="flex-1">
         <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
         <p className="mt-2 text-base text-gray-600">{description}</p>
