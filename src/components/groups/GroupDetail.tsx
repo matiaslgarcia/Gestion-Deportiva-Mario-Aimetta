@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Filter, Edit, Trash } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
@@ -75,6 +75,18 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     fetchClients();
   }, [groupId]);
 
+  const calculateAge = (birth_date: string) => {
+    const birth = new Date(birth_date);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+
   const getPaymentStatus = (client: any) => {
     if (client.last_payment && new Date(client.last_payment) >= new Date(client.payment_date)) {
       return 'pagado';
@@ -132,16 +144,17 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           <span className="font-semibold">Sede:</span> {group.locations ? group.locations.name : '-'}
         </p>
       </div>
-      {/* Botón para mostrar/ocultar filtros en mobile */}
+      {/* Botón de filtros en mobile: icono */}
       <div className="mb-4 md:hidden">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded"
+          className="p-2 bg-indigo-600 text-white rounded-full"
+          aria-label="Mostrar filtros"
         >
-          {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          <Filter className="h-6 w-6" />
         </button>
       </div>
-      {/* Filtros: se muestran siempre en desktop y en mobile si se activa */}
+      {/* Filtros */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <input
@@ -170,63 +183,122 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
         </div>
       </div>
       <h3 className="text-lg sm:text-xl font-semibold mb-4">Alumnos en este Grupo</h3>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Nombre</th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">DNI</th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Teléfono</th>
-              <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Estado de Pago</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {paginatedClients.map(client => (
-              <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                  {client.name} {client.surname}
-                </td>
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.dni}</td>
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
-                <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                  <PaymentStatusBadge
-                    statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)}
-                  />
-                </td>
-              </tr>
-            ))}
-            {paginatedClients.length === 0 && (
+      {/* Vista de tabla para tablet/desktop */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={4} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
-                  No se encontraron alumnos.
-                </td>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Nombre</th>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">DNI</th>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Teléfono</th>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Edad</th>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Estado de Pago</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {/* Controles de paginado */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span className="text-sm text-gray-700">
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-          >
-            Siguiente
-          </button>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {paginatedClients.map(client => (
+                <tr key={client.id} onClick={() => {}} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
+                    {client.name} {client.surname}
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.dni}</td>
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{calculateAge(client.birth_date)}</td>
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
+                    <PaymentStatusBadge
+                      statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)}
+                    />
+                  </td>
+                </tr>
+              ))}
+              {paginatedClients.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
+                    No se encontraron alumnos.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
+      {/* Vista en tarjetas para mobile (sin navegación al detalle) */}
+      <div className="block md:hidden">
+        {paginatedClients.map(client => (
+          <div key={client.id} className="bg-white shadow rounded p-4 mb-4">
+            <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
+            <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
+            <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
+            <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
+            <p className="text-gray-700">
+              <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+            </p>
+            <div className="flex space-x-2 mt-2">
+              <button 
+                onClick={(e) => { e.stopPropagation(); /* Puedes agregar lógica de editar si lo deseas */ }}
+                className="text-indigo-600 hover:text-indigo-900"
+                aria-label="Editar"
+              >
+                <Edit className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); /* Llama a la función de eliminar si existe */ }}
+                className="text-red-600 hover:text-red-900"
+                aria-label="Eliminar"
+              >
+                <Trash className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ))}
+        {/* Paginado para mobile */}
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Paginado para la vista en tabla, si es necesario */}
+      <div className="hidden md:block">
+        {totalPages > 1 && (
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

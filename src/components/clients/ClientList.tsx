@@ -330,10 +330,14 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
         )}
       </div>
 
-      {/* Vista en cards para mobile: Se muestran todas las columnas */}
+      {/* Vista en cards para mobile */}
       <div className="block md:hidden">
         {paginatedClients.map(client => (
-          <div key={client.id} className="bg-white shadow rounded p-4 mb-4">
+          <div
+            key={client.id}
+            onClick={() => onView(client.id)}
+            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
+          >
             <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
             <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
             <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>

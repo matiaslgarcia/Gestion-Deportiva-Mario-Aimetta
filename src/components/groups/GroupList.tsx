@@ -244,7 +244,11 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
       {/* Vista en tarjetas para mobile */}
       <div className="block md:hidden">
         {paginatedGroups.map((group) => (
-          <div key={group.id} className="bg-white shadow rounded p-4 mb-4">
+          <div
+            key={group.id}
+            onClick={() => onView(group.id)}
+            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
+          >
             <h2 className="font-bold text-gray-900">{group.name}</h2>
             <p className="text-gray-700"><strong>Horario:</strong> {group.horario}</p>
             <p className="text-gray-700"><strong>Día(s):</strong> {group.day_of_week}</p>
@@ -252,20 +256,14 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
             <p className="text-gray-700"><strong>Clientes:</strong> {clientCountMap[group.id] || 0}</p>
             <div className="flex space-x-2 mt-2">
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(group.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); onEdit(group.id); }}
                 className="text-indigo-600 hover:text-indigo-900"
                 aria-label="Editar"
               >
                 <Edit className="h-5 w-5" />
               </button>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(group.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); handleDeleteClick(group.id); }}
                 className="text-red-600 hover:text-red-900"
                 aria-label="Eliminar"
               >
@@ -274,7 +272,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
             </div>
           </div>
         ))}
-        {/* Paginado para mobile */}
+        {/* Controles de paginado para mobile */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
             <button
@@ -297,6 +295,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
           </div>
         )}
       </div>
+
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar este grupo?"

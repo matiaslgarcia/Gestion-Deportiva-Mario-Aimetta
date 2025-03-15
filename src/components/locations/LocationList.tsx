@@ -197,7 +197,11 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
       {/* Vista en tarjetas para mobile */}
       <div className="block md:hidden">
         {paginatedLocations.map(location => (
-          <div key={location.id} className="bg-white shadow rounded p-4 mb-4">
+          <div
+            key={location.id}
+            onClick={() => onView(location.id)}
+            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
+          >
             <h2 className="font-bold text-gray-900">{location.name}</h2>
             <p className="text-gray-700"><strong>Dirección:</strong> {location.address}</p>
             <p className="text-gray-700"><strong>Teléfono:</strong> {location.phone}</p>
@@ -219,7 +223,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
             </div>
           </div>
         ))}
-        {/* Paginado para mobile */}
+        {/* Controles de paginado para mobile */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
             <button
@@ -242,7 +246,6 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
           </div>
         )}
       </div>
-      
       {showConfirm && (
         <ConfirmDialog
           message="¿Estás seguro que quieres eliminar esta sede?"
