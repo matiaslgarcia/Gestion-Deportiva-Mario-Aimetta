@@ -47,6 +47,7 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         payment_date,
         last_payment,
         method_of_payment,
+        payment_status,
         client_locations (
           location_id,
           location: locations ( id, name )
@@ -72,10 +73,14 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
   // Actualiza el registro a "Pagado"
   const handleUpdatePayment = async () => {
+    if (!client) return;
     try {
+      const now = new Date().toISOString();
+      // Calcula el nuevo estado de pago usando la función getPaymentStatusColor
+      const newStatus = getPaymentStatusColor(client.payment_date, now);
       const { error } = await supabase
         .from('clients')
-        .update({ last_payment: new Date().toISOString() })
+        .update({ last_payment: now, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
         console.error('Error actualizando el pago:', error);
@@ -92,10 +97,13 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
 
   // Actualiza el registro a "No Pagado" (last_payment en null)
   const handleMarkNotPaid = async () => {
+    if (!client) return;
     try {
+      // Calcula el nuevo estado de pago sin last_payment (se espera que retorne "red" o "yellow" según la lógica)
+      const newStatus = getPaymentStatusColor(client.payment_date, null);
       const { error } = await supabase
         .from('clients')
-        .update({ last_payment: null })
+        .update({ last_payment: null, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
         console.error('Error actualizando estado de pago:', error);

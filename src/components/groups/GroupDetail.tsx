@@ -54,6 +54,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             payment_date,
             last_payment,
             method_of_payment,
+            payment_status,
             client_groups (
               group_id,
               groups ( id, name )
@@ -94,6 +95,18 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     return 'pendiente';
   };
 
+  const mapPaymentStatus = (status: string) => {
+    if (status === 'green') {
+      return 'pagado'
+    }
+    if (status === 'yellow') {
+      return 'pendiente'
+    }
+    if (status === 'red') {
+      return 'no pagado'
+    }
+  };
+
   const filteredClients = clients.filter(client => {
     if (dniFilter && !client.dni.includes(dniFilter)) return false;
     if (
@@ -104,8 +117,8 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
       )
     )
       return false;
-    const status = getPaymentStatus(client);
-    if (paymentFilter !== 'all' && status !== paymentFilter) return false;
+      const status = mapPaymentStatus(client.payment_status);
+      if (paymentFilter !== 'all' && status !== paymentFilter) return false;
     return true;
   });
 
@@ -179,6 +192,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             <option value="all">Todos los estados de pago</option>
             <option value="pagado">Pagado</option>
             <option value="pendiente">Pendiente</option>
+            <option value="no pagado">No Pagado</option>
           </select>
         </div>
       </div>
@@ -206,9 +220,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{calculateAge(client.birth_date)}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                    <PaymentStatusBadge
-                      statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)}
-                    />
+                    <PaymentStatusBadge statusColor={client.payment_status} />
                   </td>
                 </tr>
               ))}

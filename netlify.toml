@@ -1,0 +1,3 @@
+[[functions]]
+  name = "evaluatePaymentStatus"
+  schedule = "*/5 * * * *"  # Ejecuta la función cada hora

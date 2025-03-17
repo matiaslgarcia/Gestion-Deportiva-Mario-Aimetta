@@ -65,6 +65,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
           payment_date,
           last_payment,
           method_of_payment,
+          payment_status,
           client_locations (
             location_id,
             locations ( id, name )
@@ -111,6 +112,18 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     return 'pendiente';
   };
 
+  const mapPaymentStatus = (status: string) => {
+    if (status === 'green') {
+      return 'pagado'
+    }
+    if (status === 'yellow') {
+      return 'pendiente'
+    }
+    if (status === 'red') {
+      return 'no pagado'
+    }
+  };
+
   const filteredClients = clients.filter(client => {
     if (dniFilter && !client.dni.includes(dniFilter)) return false;
     if (
@@ -132,8 +145,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
       )
         return false;
     }
-    const status = getPaymentStatus(client);
-    if (paymentFilter !== 'all' && status.toLowerCase() !== paymentFilter) return false;
+    const status = mapPaymentStatus(client.payment_status);
+    if (paymentFilter !== 'all' && status !== paymentFilter) return false;
     return true;
   });
 
@@ -233,6 +246,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             <option value="all">Todos los estados de pago</option>
             <option value="pagado">Pagado</option>
             <option value="pendiente">Pendiente</option>
+            <option value="no pagado">No Pagado</option>
           </select>
         </div>
       </div>
@@ -273,7 +287,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                       : '-'}
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                    <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+                  <PaymentStatusBadge statusColor={client.payment_status} />
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                     <button

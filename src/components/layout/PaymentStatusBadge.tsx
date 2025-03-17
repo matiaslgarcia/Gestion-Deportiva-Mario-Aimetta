@@ -2,10 +2,10 @@
 import React from 'react';
 
 interface PaymentStatusBadgeProps {
-  statusColor: 'green' | 'yellow' | 'red';
+  statusColor?: string;
 }
 
-export function PaymentStatusBadge({ statusColor }: PaymentStatusBadgeProps) {
+export function PaymentStatusBadge({ statusColor = 'red' }: PaymentStatusBadgeProps) {
   let label = '';
   let bgClass = '';
   let textClass = '';
@@ -25,6 +25,11 @@ export function PaymentStatusBadge({ statusColor }: PaymentStatusBadgeProps) {
       label = 'No Pagado';
       bgClass = 'bg-red-100';
       textClass = 'text-red-800';
+      break;
+    default:
+      label = 'Desconocido';
+      bgClass = 'bg-gray-100';
+      textClass = 'text-gray-800';
       break;
   }
 
