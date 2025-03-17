@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
+import { Loader } from '../layout/Loader';
 
 interface GroupDetailProps {
   groupId: string;
@@ -134,7 +135,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
   );
 
   if (loading)
-    return <div className="p-4 text-center text-sm">Cargando Grupo...</div>;
+    return <Loader message="Cargando Información del Grupo..." />;;
   if (!group)
     return <div className="p-4 text-center text-sm">Grupo no encontrado</div>;
 

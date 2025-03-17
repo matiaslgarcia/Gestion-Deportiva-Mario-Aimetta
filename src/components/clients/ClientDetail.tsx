@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import { Client } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
+import { Loader } from '../layout/Loader';
 
 export interface ExtendedClient extends Omit<Client, 'location_ids' | 'group_ids'> {
   client_locations?: {
@@ -119,8 +120,8 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   };
 
-  if (loading) return <div className="p-4 text-center text-sm">Loading client...</div>;
-  if (!client) return <div className="p-4 text-center text-sm">Client not found</div>;
+  if (loading) return <Loader message="Cargando Información del Alumno..." />;;
+  if (!client) return <div className="p-4 text-center text-sm">Alumno no encontrado</div>;
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 md:p-8">

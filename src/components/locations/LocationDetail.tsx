@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Location } from '../../types';
+import { Loader } from '../layout/Loader';
 
 interface LocationDetailProps {
   locationId: string;
@@ -43,7 +44,7 @@ export function LocationDetail({ locationId, onBack }: LocationDetailProps) {
     fetchGroups();
   }, [locationId]);
 
-  if (loading) return <div>Cargando Sede...</div>;
+  if (loading) return <Loader message="Cargando Información de la Sede" />;;
   if (!location) return <div>Sede no encontrada</div>;
 
   return (
