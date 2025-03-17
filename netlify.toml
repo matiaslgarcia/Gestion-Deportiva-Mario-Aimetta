@@ -1,3 +1,5 @@
-[[functions]]
-  name = "evaluatePaymentStatus"
-  schedule = "*/5 * * * *"  # Ejecuta la función cada hora
+[functions]
+  directory = "netlify/functions"  # Ajusta la ruta según dónde estén tus funciones
+
+  [functions.evaluatePaymentStatus]
+    schedule = "*/5 * * * *"
