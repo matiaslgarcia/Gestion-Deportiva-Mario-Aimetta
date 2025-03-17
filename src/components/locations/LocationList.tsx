@@ -3,6 +3,7 @@ import { Location } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
+import { Loader } from '../layout/Loader';
 
 interface LocationListProps {
   onView: (id: string) => void;
@@ -80,7 +81,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
   );
 
   if (loading) {
-    return <div>Cargando Sedes...</div>;
+    return <Loader message="Cargando Sedes..." />;
   }
 
   return (
@@ -104,7 +105,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
       </div>
       {/* Filtros */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
             placeholder="Filtrar por Nombre"
@@ -135,7 +136,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
             </thead>
             <tbody className="bg-white divide-y divide-gray-300">
               {paginatedLocations.map(location => (
-                <tr key={location.id} onClick={() => onView(location.id)} className="hover:bg-gray-50">
+                <tr key={location.id} onClick={() => onView(location.id)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.name}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.address}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">{location.phone}</td>

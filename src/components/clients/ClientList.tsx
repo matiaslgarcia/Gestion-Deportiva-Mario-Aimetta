@@ -5,6 +5,7 @@ import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
+import { Loader } from '../layout/Loader';
 
 interface ExtendedClient extends Client {
   client_locations?: {
@@ -165,7 +166,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
   };
 
   if (loading) {
-    return <div className="p-4 text-center">Cargando alumnos...</div>;
+    return <Loader message="Cargando Alumnos..." />;
   }
 
   return (
@@ -340,7 +341,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
           >
             <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
             <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
-            <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
+            <p className="text-gray-700"><strong>Teléfono Padre/Madre:</strong> {client.phone}</p>
             <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
             <p className="text-gray-700">
               <strong>Sede(s):</strong> {client.client_locations && client.client_locations.length > 0

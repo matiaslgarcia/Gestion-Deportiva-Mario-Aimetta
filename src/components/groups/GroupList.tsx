@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { Group, Location } from '../../types';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
+import { Loader } from '../layout/Loader';
+
 
 interface GroupListProps {
   onView: (id: string) => void;
@@ -111,7 +113,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
     setDeleteId(null);
   };
 
-  if (loading) return <div className="p-4 text-center">Cargando grupos...</div>;
+  if (loading) return <Loader message="Cargando Grupos..." />;
 
   return (
     <div className="p-4 md:p-6">

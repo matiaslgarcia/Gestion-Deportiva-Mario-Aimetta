@@ -260,7 +260,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             {errors.dni && <p className="text-red-500 text-xs mt-1">{errors.dni}</p>}
           </div>
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono del Padre</label>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono del Padre/Madre</label>
             <input
               type="text"
               id="phone"
