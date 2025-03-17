@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { format } from 'date-fns';
+import { format, addMonths, parse } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
@@ -71,16 +71,18 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     fetchClient();
   }, [clientId]);
 
-  // Actualiza el registro a "Pagado"
+  // Actualiza el registro a "Pagado": se actualiza last_payment y payment_status.
   const handleUpdatePayment = async () => {
     if (!client) return;
     try {
-      const now = new Date().toISOString();
-      // Calcula el nuevo estado de pago usando la función getPaymentStatusColor
-      const newStatus = getPaymentStatusColor(client.payment_date, now);
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000; // offset en milisegundos
+      const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, -1);
+      const newStatus = getPaymentStatusColor(client.payment_date, localISOTime);
+
       const { error } = await supabase
         .from('clients')
-        .update({ last_payment: now, payment_status: newStatus })
+        .update({ last_payment: localISOTime, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
         console.error('Error actualizando el pago:', error);
@@ -95,12 +97,11 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   };
 
-  // Actualiza el registro a "No Pagado" (last_payment en null)
+  // Actualiza el registro a "No Pagado": se establece last_payment en null y se actualiza payment_status.
   const handleMarkNotPaid = async () => {
     if (!client) return;
     try {
-      // Calcula el nuevo estado de pago sin last_payment (se espera que retorne "red" o "yellow" según la lógica)
-      const newStatus = getPaymentStatusColor(client.payment_date, null);
+      const newStatus = getPaymentStatusColor(client.payment_date, '');
       const { error } = await supabase
         .from('clients')
         .update({ last_payment: null, payment_status: newStatus })
@@ -153,7 +154,19 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         <div>
           <dt className="text-sm font-medium text-gray-600">Fecha de Pago</dt>
           <dd className="mt-1 text-sm text-gray-800">
-            {format(new Date(client.payment_date), 'dd/MM/yyyy')}
+            {client.payment_date ? format(new Date(client.payment_date), 'dd/MM/yyyy') : '-'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm font-medium text-gray-600">Fecha Próxima de Pago </dt>
+          <dd className="mt-1 text-sm text-gray-800">
+            {client.payment_date ? format(addMonths(new Date(client.payment_date), 1), 'dd/MM/yyyy') : '-'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm font-medium text-gray-600">Fecha del último Pago Realizado</dt>
+          <dd className="mt-1 text-sm text-gray-800">
+            {client.last_payment ? format(parse(client.last_payment, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy') : '-'}
           </dd>
         </div>
         <div>

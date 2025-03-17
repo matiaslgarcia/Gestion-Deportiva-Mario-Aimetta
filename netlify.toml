@@ -2,4 +2,4 @@
   directory = "netlify/functions"  # Ajusta la ruta según dónde estén tus funciones
 
   [functions.evaluatePaymentStatus]
-    schedule = "*/5 * * * *"
+    schedule = "* * * * *"
