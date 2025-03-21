@@ -49,6 +49,7 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         last_payment,
         method_of_payment,
         payment_status,
+        direction,
         client_locations (
           location_id,
           location: locations ( id, name )
@@ -145,8 +146,14 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         <div>
           <dt className="text-sm font-medium text-gray-600">Fecha de Nacimiento</dt>
           <dd className="mt-1 text-sm text-gray-800">
-            {format(new Date(client.birth_date), 'dd/MM/yyyy')}
+            {client.birth_date
+              ? format(parse(client.birth_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
+              : '-'}
           </dd>
+        </div>
+        <div>
+          <dt className="text-sm font-medium text-gray-600">Dirección</dt>
+          <dd className="mt-1 text-sm text-gray-800">{client.direction}</dd>
         </div>
         <div>
           <dt className="text-sm font-medium text-gray-600">Método de Pago</dt>
@@ -155,13 +162,17 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         <div>
           <dt className="text-sm font-medium text-gray-600">Fecha de Pago</dt>
           <dd className="mt-1 text-sm text-gray-800">
-            {client.payment_date ? format(new Date(client.payment_date), 'dd/MM/yyyy') : '-'}
+            {client.payment_date
+              ? format(parse(client.payment_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
+              : '-'}
           </dd>
         </div>
         <div>
           <dt className="text-sm font-medium text-gray-600">Fecha Próxima de Pago </dt>
           <dd className="mt-1 text-sm text-gray-800">
-            {client.payment_date ? format(addMonths(new Date(client.payment_date), 1), 'dd/MM/yyyy') : '-'}
+            {client.payment_date
+              ? format(parse(client.payment_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
+              : '-'}
           </dd>
         </div>
         <div>

@@ -16,7 +16,7 @@ import { supabase } from './lib/supabase';
 type View = 'list' | 'detail' | 'form';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'locations' | 'clients' | 'groups'>('locations');
+  const [activeTab, setActiveTab] = useState<'locations' | 'clients' | 'groups'>('clients');
   const [view, setView] = useState<View>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);

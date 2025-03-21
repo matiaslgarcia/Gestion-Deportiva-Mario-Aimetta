@@ -56,6 +56,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             last_payment,
             method_of_payment,
             payment_status,
+            direction,
             client_groups (
               group_id,
               groups ( id, name )
@@ -86,14 +87,6 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
       age--;
     }
     return age;
-  };
-
-
-  const getPaymentStatus = (client: any) => {
-    if (client.last_payment && new Date(client.last_payment) >= new Date(client.payment_date)) {
-      return 'pagado';
-    }
-    return 'pendiente';
   };
 
   const mapPaymentStatus = (status: string) => {
@@ -207,6 +200,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                 <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Nombre</th>
                 <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">DNI</th>
                 <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Teléfono</th>
+                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Dirección</th>
                 <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Edad</th>
                 <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Estado de Pago</th>
               </tr>
@@ -219,6 +213,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                   </td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.dni}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
+                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.direction}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{calculateAge(client.birth_date)}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
                     <PaymentStatusBadge statusColor={client.payment_status} />

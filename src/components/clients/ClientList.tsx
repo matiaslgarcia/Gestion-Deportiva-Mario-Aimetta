@@ -6,6 +6,7 @@ import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { Loader } from '../layout/Loader';
+import { parse } from 'date-fns';
 
 interface ExtendedClient extends Client {
   client_locations?: {
@@ -66,6 +67,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
           last_payment,
           method_of_payment,
           payment_status,
+          direction,
           client_locations (
             location_id,
             locations ( id, name )
@@ -94,8 +96,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     }
   };
 
+  // Calcula la edad usando parse para evitar problemas de zona horaria.
   const calculateAge = (birth_date: string) => {
-    const birth = new Date(birth_date);
+    const birth = parse(birth_date, 'yyyy-MM-dd', new Date());
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
     const m = today.getMonth() - birth.getMonth();
@@ -105,23 +108,18 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     return age;
   };
 
-  const getPaymentStatus = (client: ExtendedClient) => {
-    if (client.last_payment && new Date(client.last_payment) >= new Date(client.payment_date)) {
-      return 'pagado';
-    }
-    return 'pendiente';
-  };
-
+  // Mapea el valor de payment_status a un texto (default "no pagado")
   const mapPaymentStatus = (status: string) => {
     if (status === 'green') {
-      return 'pagado'
+      return 'pagado';
     }
     if (status === 'yellow') {
-      return 'pendiente'
+      return 'pendiente';
     }
     if (status === 'red') {
-      return 'no pagado'
+      return 'no pagado';
     }
+    return 'no pagado';
   };
 
   const filteredClients = clients.filter(client => {
@@ -260,6 +258,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden sm:table-cell">DNI</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden sm:table-cell">Teléfono</th>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Dirección</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Edad</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Sede(s)</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden lg:table-cell">Grupo(s)</th>
@@ -275,6 +274,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden sm:table-cell">{client.dni}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden sm:table-cell">{client.phone}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">
+                    {client.direction || '-'}
+                  </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">{calculateAge(client.birth_date)}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">
                     {client.client_locations && client.client_locations.length > 0
@@ -287,7 +289,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                       : '-'}
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                  <PaymentStatusBadge statusColor={client.payment_status} />
+                    <PaymentStatusBadge statusColor={client.payment_status || 'red'} />
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">
                     <button
@@ -313,7 +315,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
               ))}
               {paginatedClients.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={9} className="px-3 py-4 text-center text-sm text-gray-500">
                     No se encontraron alumnos.
                   </td>
                 </tr>
@@ -356,6 +358,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
             <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
             <p className="text-gray-700"><strong>Teléfono Padre/Madre:</strong> {client.phone}</p>
+            <p className="text-gray-700"><strong>Dirección:</strong> {client.direction || '-'}</p>
             <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
             <p className="text-gray-700">
               <strong>Sede(s):</strong> {client.client_locations && client.client_locations.length > 0
@@ -368,7 +371,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                 : '-'}
             </p>
             <p className="text-gray-700">
-              <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+              <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'} />
             </p>
             <div className="flex space-x-2 mt-2">
               <button
@@ -380,8 +383,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDeleteClick(client.id); }}
-                className="text-red-600 hover:text-red-900"
-                aria-label="Eliminar"
+                className="text-red-600 hover:text-red-900 transition-colors"
               >
                 <Trash className="h-5 w-5" />
               </button>

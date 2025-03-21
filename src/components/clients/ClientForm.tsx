@@ -18,6 +18,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     birth_date: '',
     payment_date: '',
     method_of_payment: 'efectivo',
+    direction: '',
     location_ids: [] as string[],
     group_ids: [] as string[]
   });
@@ -81,7 +82,8 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         payment_date: data.payment_date || '',
         method_of_payment: data.method_of_payment || 'efectivo',
         location_ids: data.location_ids || [],
-        group_ids: data.group_ids || []
+        group_ids: data.group_ids || [],
+        direction: data.direction || '',
       });
     };
 
@@ -140,7 +142,8 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             phone: formData.phone,
             birth_date: formData.birth_date,
             payment_date: formData.payment_date,
-            method_of_payment: formData.method_of_payment
+            method_of_payment: formData.method_of_payment,
+            direction: formData.direction
           })
           .eq('id', client.id);
 
@@ -184,7 +187,8 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               phone: formData.phone,
               birth_date: formData.birth_date,
               payment_date: formData.payment_date,
-              method_of_payment: formData.method_of_payment
+              method_of_payment: formData.method_of_payment,
+              direction: formData.direction,
             }
           ])
           .select()
@@ -272,17 +276,18 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
           </div>
           <div>
-            <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+            <label htmlFor="direction" className="block text-sm font-medium text-gray-700">Dirección</label>
             <input
-              type="date"
-              id="birth_date"
-              value={formData.birth_date}
-              onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+              type="text"
+              id="direction"
+              value={formData.direction}
+              onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
-            {errors.birth_date && <p className="text-red-500 text-xs mt-1">{errors.birth_date}</p>}
+            {errors.direction && <p className="text-red-500 text-xs mt-1">{errors.direction}</p>}
           </div>
+          
           <div>
             <label htmlFor="method_of_payment" className="block text-sm font-medium text-gray-700">Método de Pago</label>
             <select
@@ -294,6 +299,18 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               <option value="efectivo">Efectivo</option>
               <option value="transferencia">Transferencia</option>
             </select>
+          </div>
+          <div>
+            <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+            <input
+              type="date"
+              id="birth_date"
+              value={formData.birth_date}
+              onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            />
+            {errors.birth_date && <p className="text-red-500 text-xs mt-1">{errors.birth_date}</p>}
           </div>
           <div>
             <label htmlFor="payment_date" className="block text-sm font-medium text-gray-700">Fecha de Pago</label>

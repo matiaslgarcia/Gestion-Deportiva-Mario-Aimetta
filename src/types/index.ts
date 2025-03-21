@@ -18,6 +18,7 @@ export interface Client {
   last_payment?: string;
   method_of_payment: 'efectivo' | 'transferencia';
   payment_status: string;
+  direction: string;
   location_ids: string[]; // IDs de las sedes asociadas (tabla client_locations)
   group_ids: string[];    // IDs de los grupos a los que pertenece (tabla client_groups)
   created_at?: string;

@@ -168,7 +168,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Horario</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Día(s)</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Sede</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Clientes</th>
+                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Cantidad de Alumnos</th>
                 <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
               </tr>
             </thead>
