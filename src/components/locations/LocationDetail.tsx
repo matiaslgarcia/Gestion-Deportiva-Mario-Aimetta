@@ -44,33 +44,52 @@ export function LocationDetail({ locationId, onBack }: LocationDetailProps) {
     fetchGroups();
   }, [locationId]);
 
-  if (loading) return <Loader message="Cargando Información de la Sede" />;;
-  if (!location) return <div>Sede no encontrada</div>;
+  if (loading)
+    return <Loader message="Cargando Información de la Sede" />;
+  if (!location)
+    return <div className="p-4 text-center text-sm text-gray-700">Sede no encontrada</div>;
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 sm:p-8">
-      <div className="flex items-center mb-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-gray-700 mr-4">
-          <ChevronRight className="h-6 w-6 transform rotate-180" />
-        </button>
-        <h2 className="text-2xl font-bold text-gray-900">{location.name}</h2>
+    <div className="max-w-3xl mx-auto p-4">
+      <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8">
+        <div className="flex items-center mb-6">
+          <button
+            onClick={onBack}
+            className="text-gray-500 hover:text-gray-700 mr-4 transition-colors"
+          >
+            <ChevronRight className="h-6 w-6 transform rotate-180" />
+          </button>
+          <h2 className="text-2xl font-bold text-gray-900">{location.name}</h2>
+        </div>
+        <dl className="divide-y divide-gray-200">
+          <div className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <dt className="text-sm font-medium text-gray-600">Dirección</dt>
+              <dd className="mt-1 text-sm text-gray-800">{location.address}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-600">Teléfono</dt>
+              <dd className="mt-1 text-sm text-gray-800">{location.phone}</dd>
+            </div>
+          </div>
+          <div className="py-4">
+            <dt className="text-sm font-medium text-gray-600">Grupos Asignados</dt>
+            <dd className="mt-1">
+              {groups.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-1">
+                  {groups.map(grp => (
+                    <li key={grp.id} className="text-sm text-gray-800">
+                      {grp.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-800">No hay grupos asignados</p>
+              )}
+            </dd>
+          </div>
+        </dl>
       </div>
-      <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <dt className="text-sm font-medium text-gray-600">Dirección</dt>
-          <dd className="mt-1 text-sm text-gray-800">{location.address}</dd>
-        </div>
-        <div>
-          <dt className="text-sm font-medium text-gray-600">Teléfono</dt>
-          <dd className="mt-1 text-sm text-gray-800">{location.phone}</dd>
-        </div>
-        <div className="md:col-span-2">
-          <dt className="text-sm font-medium text-gray-600">Grupos Asignados</dt>
-          <dd className="mt-1 text-sm text-gray-800">
-            {groups.length > 0 ? groups.map(grp => grp.name).join(', ') : 'No hay grupos asignados'}
-          </dd>
-        </div>
-      </dl>
     </div>
   );
 }

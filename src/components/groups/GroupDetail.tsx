@@ -89,16 +89,16 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     return age;
   };
 
-  const mapPaymentStatus = (status: string) => {
-    if (status === 'green') {
-      return 'pagado'
-    }
-    if (status === 'yellow') {
-      return 'pendiente'
-    }
-    if (status === 'red') {
-      return 'no pagado'
-    }
+  // Aquí usamos getPaymentStatusColor para determinar el estado y lo mapeamos a texto
+  const getMappedPaymentStatus = (client: any) => {
+    const statusColor = getPaymentStatusColor(client.payment_date, client.last_payment) || 'red';
+    return statusColor === 'green'
+      ? 'pagado'
+      : statusColor === 'yellow'
+      ? 'pendiente'
+      : statusColor === 'red'
+      ? 'no pagado'
+      : 'Desconocido';
   };
 
   const filteredClients = clients.filter(client => {
@@ -111,8 +111,8 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
       )
     )
       return false;
-      const status = mapPaymentStatus(client.payment_status);
-      if (paymentFilter !== 'all' && status !== paymentFilter) return false;
+    const status = getMappedPaymentStatus(client);
+    if (paymentFilter !== 'all' && status !== paymentFilter) return false;
     return true;
   });
 
@@ -127,8 +127,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     currentPage * rowsPerPage
   );
 
-  if (loading)
-    return <Loader message="Cargando Información del Grupo..." />;;
+  if (loading) return <Loader message="Cargando Información del Grupo..." />;
   if (!group)
     return <div className="p-4 text-center text-sm">Grupo no encontrado</div>;
 
@@ -216,13 +215,15 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.direction}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{calculateAge(client.birth_date)}</td>
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                    <PaymentStatusBadge statusColor={client.payment_status} />
+                    <PaymentStatusBadge
+                      statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'}
+                    />
                   </td>
                 </tr>
               ))}
               {paginatedClients.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
+                  <td colSpan={6} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
                     No se encontraron alumnos.
                   </td>
                 </tr>
@@ -240,18 +241,19 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
             <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
             <p className="text-gray-700">
-              <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+              <strong>Estado de Pago:</strong>{' '}
+              <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
             </p>
             <div className="flex space-x-2 mt-2">
               <button 
-                onClick={(e) => { e.stopPropagation(); /* Puedes agregar lógica de editar si lo deseas */ }}
+                onClick={(e) => { e.stopPropagation(); /* Lógica de editar si se requiere */ }}
                 className="text-indigo-600 hover:text-indigo-900"
                 aria-label="Editar"
               >
                 <Edit className="h-5 w-5" />
               </button>
               <button 
-                onClick={(e) => { e.stopPropagation(); /* Llama a la función de eliminar si existe */ }}
+                onClick={(e) => { e.stopPropagation(); /* Lógica de eliminar si se requiere */ }}
                 className="text-red-600 hover:text-red-900"
                 aria-label="Eliminar"
               >

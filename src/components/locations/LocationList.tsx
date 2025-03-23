@@ -64,7 +64,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
   };
 
   const filteredLocations = locations.filter(location => {
-    if (nameFilter && !location.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+    if (nameFilter && location.name !== nameFilter) return false;
     if (addressFilter && !location.address.toLowerCase().includes(addressFilter.toLowerCase())) return false;
     // Filtrado por grupo si se requiere
     return true;
@@ -106,13 +106,18 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
       {/* Filtros */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Filtrar por Nombre"
+          <select
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
             className="border rounded p-2 text-sm"
-          />
+          >
+            <option value="">Todas las sedes</option>
+            {locations.map(location => (
+              <option key={location.id} value={location.name}>
+                {location.name}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             placeholder="Filtrar por Dirección"

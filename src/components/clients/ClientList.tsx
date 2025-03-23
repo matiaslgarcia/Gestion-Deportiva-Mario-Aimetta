@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Client, Location } from '../../types';
+import { Client, Location, Group } from '../../types'; // Asegúrate de tener definido el tipo Group
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
@@ -29,6 +29,7 @@ interface ClientListProps {
 export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps) {
   const [clients, setClients] = useState<ExtendedClient[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]); // Nuevo estado para grupos
   const [loading, setLoading] = useState(true);
   // Filtros
   const [dniFilter, setDniFilter] = useState('');
@@ -49,6 +50,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
   useEffect(() => {
     fetchClients();
     fetchLocations();
+    fetchGroups(); // Traemos los grupos
   }, []);
 
   const fetchClients = async () => {
@@ -96,6 +98,17 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     }
   };
 
+  // Función para traer los grupos
+  const fetchGroups = async () => {
+    try {
+      const { data, error } = await supabase.from('groups').select('*');
+      if (error) throw error;
+      setGroups(data || []);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    }
+  };
+
   // Calcula la edad usando parse para evitar problemas de zona horaria.
   const calculateAge = (birth_date: string) => {
     const birth = parse(birth_date, 'yyyy-MM-dd', new Date());
@@ -134,13 +147,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
       if (!client.client_locations || !client.client_locations.some(cl => cl.location_id === locationFilter))
         return false;
     }
+    // Ahora comparamos el group_id en vez del nombre
     if (groupFilter) {
-      if (
-        !client.client_groups ||
-        !client.client_groups.some(cg =>
-          cg.groups?.name.toLowerCase().includes(groupFilter.toLowerCase())
-        )
-      )
+      if (!client.client_groups || !client.client_groups.some(cg => cg.group_id === groupFilter))
         return false;
     }
     const status = mapPaymentStatus(client.payment_status);
@@ -217,13 +226,19 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             onChange={(e) => setNameFilter(e.target.value)}
             className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <input
-            type="text"
-            placeholder="Filtrar por Grupo"
+          {/* Filtro de Grupo convertido a select */}
+          <select
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
             className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          >
+            <option value="">Todos los Grupos</option>
+            {groups.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
@@ -323,7 +338,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             </tbody>
           </table>
         </div>
-        {/* Paginado para desktop */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
             <button
@@ -390,7 +404,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             </div>
           </div>
         ))}
-        {/* Paginado para mobile */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
             <button

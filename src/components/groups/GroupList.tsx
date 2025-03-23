@@ -5,7 +5,6 @@ import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { Loader } from '../layout/Loader';
 
-
 interface GroupListProps {
   onView: (id: string) => void;
   onEdit: (id: string) => void;
@@ -80,7 +79,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
   }, {});
 
   const filteredGroups = groups.filter((group) => {
-    if (nameFilter && !group.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+    if (nameFilter && group.name !== nameFilter) return false;
     if (locationFilter && group.location_id !== locationFilter) return false;
     return true;
   });
@@ -134,16 +133,22 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
           <Plus className="h-6 w-6" />
         </button>
       </div>
-      {/* Filtros (tabla view) */}
+      {/* Filtros (vista en tabla) */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Filtrar por Nombre"
+          {/* Se reemplaza el input por un select para filtrar por Nombre */}
+          <select
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
             className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+          >
+            <option value="">Todos los Grupos</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.name}>
+                {group.name}
+              </option>
+            ))}
+          </select>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
