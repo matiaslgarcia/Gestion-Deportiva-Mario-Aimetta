@@ -78,19 +78,19 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     if (!client) return;
     try {
       const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000; // offset en milisegundos
-      const localISOTime = new Date(now.getTime() - offset).toISOString().slice(0, -1);
-      const newStatus = getPaymentStatusColor(client.payment_date, localISOTime);
-
+      const isoTime = now.toISOString();
+      const newStatus = getPaymentStatusColor(client.payment_date, isoTime);
+  
       const { error } = await supabase
         .from('clients')
-        .update({ last_payment: localISOTime, payment_status: newStatus })
+        .update({ last_payment: isoTime, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
         console.error('Error actualizando el pago:', error);
         toast.error('Error actualizando el pago');
       } else {
         toast.success('¡Pago actualizado correctamente!');
+        setClient({ ...client, last_payment: isoTime, payment_status: newStatus });
         fetchClient();
       }
     } catch (err) {
@@ -113,6 +113,7 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
         toast.error('Error actualizando estado de pago');
       } else {
         toast.success('Estado de pago actualizado a No Pagado');
+        setClient({ ...client, last_payment: '', payment_status: newStatus });
         fetchClient();
       }
     } catch (err) {

@@ -9,9 +9,10 @@ import { Loader } from '../layout/Loader';
 interface GroupDetailProps {
   groupId: string;
   onBack: () => void;
+  onClientClick: (clientId: string) => void;
 }
 
-export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
+export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps) {
   const [group, setGroup] = useState<Group | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +90,6 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
     return age;
   };
 
-  // Aquí usamos getPaymentStatusColor para determinar el estado y lo mapeamos a texto
   const getMappedPaymentStatus = (client: any) => {
     const statusColor = getPaymentStatusColor(client.payment_date, client.last_payment) || 'red';
     return statusColor === 'green'
@@ -101,22 +101,20 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
       : 'Desconocido';
   };
 
+  const normalizeDNI = (dni: string) => dni.replace(/\D/g, '');
   const filteredClients = clients.filter(client => {
-    if (dniFilter && !client.dni.includes(dniFilter)) return false;
-    if (
-      nameFilter &&
-      !(
-        client.name.toLowerCase().includes(nameFilter.toLowerCase()) ||
-        client.surname.toLowerCase().includes(nameFilter.toLowerCase())
-      )
-    )
+    if (dniFilter && !normalizeDNI(client.dni).includes(normalizeDNI(dniFilter))) {
       return false;
+    }
+    const fullName = `${client.name} ${client.surname}`.toLowerCase();
+    if (nameFilter && !fullName.includes(nameFilter.toLowerCase().trim())) {
+      return false;
+    }
     const status = getMappedPaymentStatus(client);
     if (paymentFilter !== 'all' && status !== paymentFilter) return false;
     return true;
   });
 
-  // Reinicia la página actual cuando cambian los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [dniFilter, nameFilter, paymentFilter]);
@@ -150,7 +148,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           <span className="font-semibold">Sede:</span> {group.locations ? group.locations.name : '-'}
         </p>
       </div>
-      {/* Botón de filtros en mobile: icono */}
+      {/* Botón de filtros en mobile */}
       <div className="mb-4 md:hidden">
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -206,7 +204,11 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {paginatedClients.map(client => (
-                <tr key={client.id} onClick={() => {}} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={client.id}
+                  onClick={() => onClientClick(client.id)}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
                     {client.name} {client.surname}
                   </td>
@@ -232,10 +234,14 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           </table>
         </div>
       </div>
-      {/* Vista en tarjetas para mobile (sin navegación al detalle) */}
+      {/* Vista en tarjetas para mobile */}
       <div className="block md:hidden">
         {paginatedClients.map(client => (
-          <div key={client.id} className="bg-white shadow rounded p-4 mb-4">
+          <div
+            key={client.id}
+            onClick={() => onClientClick(client.id)}
+            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
+          >
             <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
             <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
             <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
@@ -244,25 +250,8 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
               <strong>Estado de Pago:</strong>{' '}
               <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
             </p>
-            <div className="flex space-x-2 mt-2">
-              <button 
-                onClick={(e) => { e.stopPropagation(); /* Lógica de editar si se requiere */ }}
-                className="text-indigo-600 hover:text-indigo-900"
-                aria-label="Editar"
-              >
-                <Edit className="h-5 w-5" />
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); /* Lógica de eliminar si se requiere */ }}
-                className="text-red-600 hover:text-red-900"
-                aria-label="Eliminar"
-              >
-                <Trash className="h-5 w-5" />
-              </button>
-            </div>
           </div>
         ))}
-        {/* Paginado para mobile */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
             <button
@@ -285,7 +274,7 @@ export function GroupDetail({ groupId, onBack }: GroupDetailProps) {
           </div>
         )}
       </div>
-      {/* Paginado para la vista en tabla, si es necesario */}
+      {/* Paginado para la vista en tabla */}
       <div className="hidden md:block">
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">

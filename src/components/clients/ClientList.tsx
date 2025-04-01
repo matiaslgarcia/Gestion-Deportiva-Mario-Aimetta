@@ -134,15 +134,16 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     }
     return 'no pagado';
   };
+  const normalizeDNI = (dni: string) => dni.replace(/\D/g, '');
 
   const filteredClients = clients.filter(client => {
-    if (dniFilter && !client.dni.includes(dniFilter)) return false;
-    if (
-      nameFilter &&
-      !(client.name.toLowerCase().includes(nameFilter.toLowerCase()) ||
-        client.surname.toLowerCase().includes(nameFilter.toLowerCase()))
-    )
+    if (dniFilter && !normalizeDNI(client.dni).includes(normalizeDNI(dniFilter))) {
       return false;
+    }
+    const fullName = `${client.name} ${client.surname}`.toLowerCase();
+    if (nameFilter && !fullName.includes(nameFilter.toLowerCase().trim())) {
+      return false;
+    }
     if (locationFilter) {
       if (!client.client_locations || !client.client_locations.some(cl => cl.location_id === locationFilter))
         return false;

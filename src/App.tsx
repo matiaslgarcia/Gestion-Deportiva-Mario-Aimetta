@@ -87,6 +87,19 @@ function App() {
     }
   };
 
+  // Handler para ver clientes de un grupo
+  const handleClientClick = (clientId: string) => {
+    setActiveTab('clients');
+    setSelectedId(clientId);
+    setView('detail');
+  };
+  // Handler para ver grupos de una sede
+  const handleLocationGroupClick = (groupId: string) => {
+    setActiveTab('groups');
+    setSelectedId(groupId);
+    setView('detail');
+  };
+
   // Handlers para ver y editar grupos
   const handleGroupView = (id: string) => {
     setSelectedId(id);
@@ -121,7 +134,11 @@ function App() {
           );
         case 'detail':
           return selectedId ? (
-            <LocationDetail locationId={selectedId} onBack={handleBack} />
+            <LocationDetail
+              locationId={selectedId}
+              onBack={handleBack}
+              onGroupClick={handleLocationGroupClick}
+            />
           ) : null;
         case 'form':
           return (
@@ -187,7 +204,7 @@ function App() {
           );
         case 'detail':
           return selectedId ? (
-            <GroupDetail groupId={selectedId} onBack={handleBack} />
+            <GroupDetail groupId={selectedId} onBack={handleBack} onClientClick={handleClientClick} />
           ) : null;
         case 'form':
           return (
