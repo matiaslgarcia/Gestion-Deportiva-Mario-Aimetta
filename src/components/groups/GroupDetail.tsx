@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, Filter, Edit, Trash } from 'lucide-react';
+import { ChevronRight, Filter } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
@@ -62,7 +62,8 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
               group_id,
               groups ( id, name )
             )
-          `);
+          `)
+          .eq('is_active', true);  // Filtra solo alumnos activos
         if (error) throw error;
         const groupClients = (data || []).filter((client: any) =>
           client.client_groups && client.client_groups.some((cg: any) => cg.group_id === groupId)

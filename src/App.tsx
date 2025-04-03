@@ -16,12 +16,12 @@ import { supabase } from './lib/supabase';
 type View = 'list' | 'detail' | 'form';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'locations' | 'clients' | 'groups'>('clients');
+  const [activeTab, setActiveTab] = useState<'locations' | 'clients' | 'groups' | 'clients-inactive'>('clients');
   const [view, setView] = useState<View>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleTabChange = (tab: 'locations' | 'clients' | 'groups') => {
+  const handleTabChange = (tab: 'locations' | 'clients' | 'groups' | 'clients-inactive') => {
     setActiveTab(tab);
     setView('list');
     setSelectedId(null);
@@ -72,12 +72,12 @@ function App() {
     }
   };
 
-  // Handler para eliminar clientes
+  // Handler para eliminar clientes (eliminación lógica)
   const handleDeleteClient = async (id: string) => {
     try {
       const { error } = await supabase
         .from('clients')
-        .delete()
+        .update({ is_active: false })
         .eq('id', id);
       if (error) throw error;
       toast.success('¡Alumno eliminado correctamente!');
@@ -87,12 +87,28 @@ function App() {
     }
   };
 
+  // Handler para habilitar clientes inactivos
+  const handleEnableClient = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_active: true })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('¡Alumno habilitado correctamente!');
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error habilitando alumno:', error);
+    }
+  };
+
   // Handler para ver clientes de un grupo
   const handleClientClick = (clientId: string) => {
     setActiveTab('clients');
     setSelectedId(clientId);
     setView('detail');
   };
+
   // Handler para ver grupos de una sede
   const handleLocationGroupClick = (groupId: string) => {
     setActiveTab('groups');
@@ -156,15 +172,51 @@ function App() {
             <>
               <PageHeader
                 title="Alumnos"
-                description="Listado de alumnos."
+                description="Listado de alumnos activos."
                 onAdd={handleAdd}
                 addButtonText="Agregar Alumno"
               />
               <ClientList
                 key={refreshKey}
+                isActive={true}
                 onView={(id) => { setSelectedId(id); setView('detail'); }}
                 onEdit={(id) => { setSelectedId(id); setView('form'); }}
                 onDelete={handleDeleteClient}
+                onAdd={handleAdd}
+              />
+            </>
+          );
+        case 'detail':
+          return selectedId ? (
+            <ClientDetail clientId={selectedId} onBack={handleBack} />
+          ) : null;
+        case 'form':
+          return (
+            <ClientForm
+              client={selectedId ? { id: selectedId } : undefined}
+              onSave={handleSave}
+              onCancel={handleBack}
+            />
+          );
+      }
+    } else if (activeTab === 'clients-inactive') {
+      switch (view) {
+        case 'list':
+          return (
+            <>
+              <PageHeader
+                title="Alumnos Inactivos"
+                description="Listado de alumnos inactivos."
+                onAdd={handleAdd}
+                addButtonText="Agregar Alumno"
+              />
+              <ClientList
+                key={refreshKey}
+                isActive={false}
+                onView={(id) => { setSelectedId(id); setView('detail'); }}
+                onEdit={(id) => { setSelectedId(id); setView('form'); }}
+                onEnable={handleEnableClient}
+                onDelete={handleDeleteClient}  // Opcional según se requiera
                 onAdd={handleAdd}
               />
             </>
@@ -219,16 +271,12 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex">
       <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
-      <div className="flex-1 overflow-auto flex justify-center">
-        <main className="py-6 px-4 sm:px-6 lg:px-8 mt-10 w-full max-w-7xl">
-          <div className="bg-white shadow rounded-lg p-6 transition-all duration-300">
-            {renderContent()}
-          </div>
-        </main>
+      <div className="flex-1 ml-64 p-4">
+        {renderContent()}
+        <Toaster />
       </div>
-      <Toaster position="top-right" />
     </div>
   );
 }

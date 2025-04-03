@@ -260,7 +260,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
             <p className="text-gray-700"><strong>Horario:</strong> {group.horario}</p>
             <p className="text-gray-700"><strong>Día(s):</strong> {group.day_of_week}</p>
             <p className="text-gray-700"><strong>Sede:</strong> {group.locations ? group.locations.name : '-'}</p>
-            <p className="text-gray-700"><strong>Clientes:</strong> {clientCountMap[group.id] || 0}</p>
+            <p className="text-gray-700"><strong>Cantidad de Alumnos:</strong> {clientCountMap[group.id] || 0}</p>
             <div className="flex space-x-2 mt-2">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(group.id); }}

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Building2, Users, Group as GroupIcon, Menu, X } from 'lucide-react';
+import { Building2, Users, Group as GroupIcon, Menu, X, UserX } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 interface SidebarProps {
-  activeTab: 'locations' | 'clients' | 'groups';
-  onTabChange: (tab: 'locations' | 'clients' | 'groups') => void;
+  activeTab: 'locations' | 'clients' | 'groups' | 'clients-inactive';
+  onTabChange: (tab: 'locations' | 'clients' | 'groups' | 'clients-inactive') => void;
 }
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
@@ -13,7 +13,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
   const navItems = [
     {
       key: 'clients',
-      label: 'Alumnos',
+      label: 'Alumnos Activos',
       icon: <Users className="h-5 w-5 mr-2" />,
     },
     {
@@ -26,16 +26,21 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       label: 'Sedes',
       icon: <Building2 className="h-5 w-5 mr-2" />,
     },
+    {
+      key: 'clients-inactive',
+      label: 'Alumnos Inactivos',
+      icon: <UserX className="h-5 w-5 mr-2" />,
+    },
   ];
 
   return (
     <>
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between bg-white shadow-md p-4 fixed w-full top-0 left-0 z-40">
-        <img 
-          src={logo} 
-          alt="Logo" 
-          className="h-14 cursor-pointer" 
+        <img
+          src={logo}
+          alt="Logo"
+          className="h-14 cursor-pointer"
           onClick={() => onTabChange('clients')}
         />
         <button onClick={() => setIsOpen(true)} aria-label="Abrir menú">
@@ -53,10 +58,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="relative bg-white w-64 h-full shadow-lg">
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center">
-              <img 
-                src={logo} 
-                alt="Logo" 
-                className="h-14 cursor-pointer" 
+              <img
+                src={logo}
+                alt="Logo"
+                className="h-14 cursor-pointer"
                 onClick={() => {
                   onTabChange('clients');
                   setIsOpen(false);
@@ -72,7 +77,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
               <button
                 key={item.key}
                 onClick={() => {
-                  onTabChange(item.key as 'clients' | 'groups' | 'locations');
+                  onTabChange(item.key as 'locations' | 'clients' | 'groups' | 'clients-inactive');
                   setIsOpen(false);
                 }}
                 className={`w-full flex items-center px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
@@ -92,13 +97,18 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 bg-white shadow-lg">
         <div className="flex items-center p-4 border-b">
-          <img src={logo} alt="Logo" className="h-20 cursor-pointer" onClick={() => onTabChange('clients')} />
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-20 cursor-pointer"
+            onClick={() => onTabChange('clients')}
+          />
         </div>
         <nav className="p-4 flex-1 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.key}
-              onClick={() => onTabChange(item.key as 'clients' | 'groups' | 'locations')}
+              onClick={() => onTabChange(item.key as 'locations' | 'clients' | 'groups' | 'clients-inactive')}
               className={`w-full flex items-center px-4 py-2 text-sm rounded-lg transition-colors duration-200 ${
                 activeTab === item.key
                   ? 'bg-indigo-50 text-indigo-600'

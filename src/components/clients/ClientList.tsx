@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Client, Location, Group } from '../../types'; // Asegúrate de tener definido el tipo Group
+import { Client, Location, Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
@@ -24,12 +24,14 @@ interface ClientListProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onAdd: () => void;
+  isActive?: boolean; // true: mostrar activos; false: mostrar inactivos
+  onEnable?: (id: string) => void; // función para habilitar alumno inactivo
 }
 
-export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps) {
+export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, onEnable }: ClientListProps) {
   const [clients, setClients] = useState<ExtendedClient[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]); // Nuevo estado para grupos
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   // Filtros
   const [dniFilter, setDniFilter] = useState('');
@@ -50,8 +52,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
   useEffect(() => {
     fetchClients();
     fetchLocations();
-    fetchGroups(); // Traemos los grupos
-  }, []);
+    fetchGroups();
+  }, [isActive]);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -78,7 +80,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             group_id,
             groups ( id, name )
           )
-        `);
+        `)
+        .eq('is_active', isActive);
       if (error) throw error;
       setClients((data as ExtendedClient[]) || []);
     } catch (error) {
@@ -98,7 +101,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     }
   };
 
-  // Función para traer los grupos
   const fetchGroups = async () => {
     try {
       const { data, error } = await supabase.from('groups').select('*');
@@ -109,7 +111,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     }
   };
 
-  // Calcula la edad usando parse para evitar problemas de zona horaria.
   const calculateAge = (birth_date: string) => {
     const birth = parse(birth_date, 'yyyy-MM-dd', new Date());
     const today = new Date();
@@ -121,7 +122,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
     return age;
   };
 
-  // Mapea el valor de payment_status a un texto (default "no pagado")
   const mapPaymentStatus = (status: string) => {
     if (status === 'green') {
       return 'pagado';
@@ -148,7 +148,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
       if (!client.client_locations || !client.client_locations.some(cl => cl.location_id === locationFilter))
         return false;
     }
-    // Ahora comparamos el group_id en vez del nombre
     if (groupFilter) {
       if (!client.client_groups || !client.client_groups.some(cg => cg.group_id === groupFilter))
         return false;
@@ -192,7 +191,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
 
   return (
     <div className="p-4">
-      {/* Mobile header: icon buttons para filtros y agregar */}
+      {/* Mobile header: icon buttons for filters and add */}
       <div className="flex items-center justify-between mb-4 md:hidden">
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -210,7 +209,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
         </button>
       </div>
 
-      {/* Filtros: se muestran en mobile si se activan y siempre en desktop */}
+      {/* Filtros */}
       <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
           <input
@@ -227,7 +226,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
             onChange={(e) => setNameFilter(e.target.value)}
             className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          {/* Filtro de Grupo convertido a select */}
           <select
             value={groupFilter}
             onChange={(e) => setGroupFilter(e.target.value)}
@@ -265,7 +263,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
         </div>
       </div>
 
-      {/* Vista de tabla para tablet y desktop */}
+      {/* Vista de tabla para desktop */}
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
@@ -308,24 +306,42 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
                     <PaymentStatusBadge statusColor={client.payment_status || 'red'} />
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(client.id);
-                      }}
-                      className="mr-2 text-indigo-600 hover:text-indigo-900 transition-colors"
-                    >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(client.id);
-                      }}
-                      className="text-red-600 hover:text-red-900 transition-colors"
-                    >
-                      <Trash className="h-5 w-5" />
-                    </button>
+                    {isActive ? (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(client.id);
+                          }}
+                          className="mr-2 text-indigo-600 hover:text-indigo-900 transition-colors"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(client.id);
+                          }}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <Trash className="h-5 w-5" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {onEnable && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEnable(client.id);
+                            }}
+                            className="text-green-600 hover:text-green-900 transition-colors flex items-center gap-1"
+                          >
+                            Habilitar
+                          </button>
+                        )}
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -362,7 +378,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
         )}
       </div>
 
-      {/* Vista en cards para mobile */}
+      {/* Vista en tarjetas para mobile */}
       <div className="block md:hidden">
         {paginatedClients.map(client => (
           <div
@@ -389,19 +405,37 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
               <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'} />
             </p>
             <div className="flex space-x-2 mt-2">
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(client.id); }}
-                className="text-indigo-600 hover:text-indigo-900"
-                aria-label="Editar"
-              >
-                <Edit className="h-5 w-5" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteClick(client.id); }}
-                className="text-red-600 hover:text-red-900 transition-colors"
-              >
-                <Trash className="h-5 w-5" />
-              </button>
+              {isActive ? (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(client.id); }}
+                    className="text-indigo-600 hover:text-indigo-900"
+                    aria-label="Editar"
+                  >
+                    <Edit className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(client.id); }}
+                    className="text-red-600 hover:text-red-900 transition-colors"
+                  >
+                    <Trash className="h-5 w-5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  {onEnable && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEnable(client.id);
+                      }}
+                      className="text-green-600 hover:text-green-900 transition-colors text-xs"
+                    >
+                      Habilitar Alumno
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         ))}
@@ -430,7 +464,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd }: ClientListProps)
 
       {showConfirm && (
         <ConfirmDialog
-          message="¿Estás seguro que quieres eliminar este alumno?"
+          message="¿Está seguro de que desea eliminar este alumno?"
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
         />
