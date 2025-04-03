@@ -16,13 +16,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ message, onConfirm
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
           <button
             onClick={onConfirm}
-            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded hover:bg-red-700 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded hover:bg-green-300 transition-colors"
           >
             Sí
           </button>
           <button
             onClick={onCancel}
-            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded hover:bg-gray-300 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded hover:bg-red-300 transition-colors"
           >
             No
           </button>

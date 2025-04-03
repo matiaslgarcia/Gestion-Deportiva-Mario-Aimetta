@@ -464,7 +464,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
 
       {showConfirm && (
         <ConfirmDialog
-          message="¿Está seguro de que desea eliminar este alumno?"
+          message="¿Está seguro de que desea inhabilitar este alumno?"
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
         />
