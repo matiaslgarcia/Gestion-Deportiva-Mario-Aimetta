@@ -59,13 +59,29 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       if (client && client.id && !client.name) {
         const { data, error } = await supabase
           .from('clients')
-          .select('*')
+          .select(`
+            *,
+            client_locations (
+              location_id
+            ),
+            client_groups (
+              group_id
+            )
+          `)
           .eq('id', client.id)
           .single();
+        
         if (error) {
           console.error('Error fetching client:', error);
         } else {
-          updateFormData(data);
+          const locationIds = data.client_locations?.map((cl: { location_id: string }) => cl.location_id) || [];
+          const groupIds = data.client_groups?.map((cg: { group_id: string }) => cg.group_id) || [];
+          
+          updateFormData({
+            ...data,
+            location_ids: locationIds,
+            group_ids: groupIds
+          });
         }
       } else if (client) {
         updateFormData(client);
