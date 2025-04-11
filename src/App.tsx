@@ -127,6 +127,27 @@ function App() {
     setView('form');
   };
 
+  const handleClientEdit = (client: any) => {
+    setSelectedId(client.id);
+    setView('form');
+  };
+
+  const handleClientDelete = async (clientId: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_active: false })
+        .eq('id', clientId);
+      if (error) throw error;
+      toast.success('¡Alumno dado de baja correctamente!');
+      setView('list');
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error dando de baja al alumno:', error);
+      toast.error('Error al dar de baja al alumno');
+    }
+  };
+
   const renderContent = () => {
     if (activeTab === 'locations') {
       switch (view) {
@@ -188,7 +209,12 @@ function App() {
           );
         case 'detail':
           return selectedId ? (
-            <ClientDetail clientId={selectedId} onBack={handleBack} />
+            <ClientDetail 
+              clientId={selectedId} 
+              onBack={handleBack} 
+              onEdit={handleClientEdit}
+              onDelete={handleClientDelete}
+            />
           ) : null;
         case 'form':
           return (

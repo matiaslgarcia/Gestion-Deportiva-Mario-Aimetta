@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format, addMonths, parse } from 'date-fns';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { Client } from '../../types';
@@ -28,9 +28,11 @@ export interface ExtendedClient extends Omit<Client, 'location_ids' | 'group_ids
 interface ClientDetailProps {
   clientId: string;
   onBack: () => void;
+  onEdit?: (client: ExtendedClient) => void;
+  onDelete?: (clientId: string) => void;
 }
 
-export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
+export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetailProps) {
   const [client, setClient] = useState<ExtendedClient | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -122,18 +124,66 @@ export function ClientDetail({ clientId, onBack }: ClientDetailProps) {
     }
   };
 
+  const handleEdit = () => {
+    if (client && onEdit) {
+      onEdit(client);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!client || !onDelete) return;
+    
+    if (window.confirm('¿Estás seguro de que deseas dar de baja a este alumno?')) {
+      try {
+        const { error } = await supabase
+          .from('clients')
+          .delete()
+          .eq('id', clientId);
+        
+        if (error) {
+          console.error('Error al dar de baja al alumno:', error);
+          toast.error('Error al dar de baja al alumno');
+        } else {
+          toast.success('Alumno dado de baja correctamente');
+          onDelete(clientId);
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Error al dar de baja al alumno');
+      }
+    }
+  };
+
   if (loading) return <Loader message="Cargando Información del Alumno..." />;;
   if (!client) return <div className="p-4 text-center text-sm">Alumno no encontrado</div>;
 
   return (
     <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 md:p-8">
-      <div className="flex items-center mb-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-gray-700 mr-4">
-          <ChevronRight className="h-6 w-6 transform rotate-180" />
-        </button>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-          {client.name} {client.surname}
-        </h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <button onClick={onBack} className="text-gray-500 hover:text-gray-700 mr-4">
+            <ChevronRight className="h-6 w-6 transform rotate-180" />
+          </button>
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+            {client.name} {client.surname}
+          </h2>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleEdit}
+            className="p-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-full transition-colors"
+            title="Editar alumno"
+          >
+            <Edit className="h-5 w-5" />
+          </button>
+          <button
+            onClick={handleDelete}
+            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
+            title="Dar de baja al alumno"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
+        </div>
       </div>
       <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
