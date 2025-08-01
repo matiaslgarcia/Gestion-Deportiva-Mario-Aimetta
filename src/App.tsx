@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Sidebar } from './components/layout/Sidebar';
+import { Dashboard } from './components/dashboard/Dashboard';
 import { LocationList } from './components/locations/LocationList';
 import { LocationDetail } from './components/locations/LocationDetail';
 import { LocationForm } from './components/locations/LocationForm';
@@ -11,33 +12,51 @@ import { GroupList } from './components/groups/GroupList';
 import { GroupDetail } from './components/groups/GroupDetail';
 import { GroupForm } from './components/groups/GroupForm';
 import { PageHeader } from './components/shared/PageHeader';
+import { Breadcrumbs } from './components/shared/Breadcrumbs';
 import { supabase } from './lib/supabase';
 
 type View = 'list' | 'detail' | 'form';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'locations' | 'clients' | 'groups' | 'clients-inactive'>('clients');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'locations' | 'clients' | 'groups' | 'clients-inactive'>('dashboard');
   const [view, setView] = useState<View>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleTabChange = (tab: 'locations' | 'clients' | 'groups' | 'clients-inactive') => {
+  // Inicializar tema
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const handleTabChange = (tab: 'dashboard' | 'locations' | 'clients' | 'groups' | 'clients-inactive') => {
+    console.log('handleTabChange called with:', tab);
     setActiveTab(tab);
     setView('list');
     setSelectedId(null);
   };
 
   const handleAdd = () => {
+    console.log('handleAdd called - activeTab:', activeTab, 'current view:', view);
     setSelectedId(null);
     setView('form');
+    console.log('handleAdd completed - new view should be: form');
   };
 
   const handleBack = () => {
+    console.log('handleBack called');
     setView('list');
     setSelectedId(null);
   };
 
   const handleSave = async () => {
+    console.log('handleSave called');
     setView('list');
     setRefreshKey(prev => prev + 1);
   };
@@ -153,7 +172,10 @@ function App() {
   };
 
   const renderContent = () => {
-    if (activeTab === 'locations') {
+    console.log('renderContent called - activeTab:', activeTab, 'view:', view, 'selectedId:', selectedId);
+    if (activeTab === 'dashboard') {
+      return <Dashboard onClientClick={handleClientClick} />;
+    } else if (activeTab === 'locations') {
       switch (view) {
         case 'list':
           return (
@@ -300,16 +322,102 @@ function App() {
     }
   };
 
+  // Generar breadcrumbs
+  const getBreadcrumbs = () => {
+    const items = [];
+    
+    if (activeTab !== 'dashboard') {
+      items.push({
+        label: getTabLabel(activeTab),
+        onClick: view !== 'list' ? () => handleBack() : undefined,
+        active: view === 'list'
+      });
+    }
+    
+    if (view === 'detail') {
+      items.push({
+        label: 'Detalles',
+        active: true
+      });
+    } else if (view === 'form') {
+      items.push({
+        label: selectedId ? 'Editar' : 'Nuevo',
+        active: true
+      });
+    }
+    
+    return items;
+  };
+
+  const getTabLabel = (tab: string) => {
+    switch (tab) {
+      case 'clients': return 'Alumnos Activos';
+      case 'clients-inactive': return 'Alumnos Inactivos';
+      case 'groups': return 'Grupos';
+      case 'locations': return 'Sedes';
+      default: return 'Dashboard';
+    }
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
-      <div className="flex-1 overflow-auto flex justify-center">
-         <main className="py-6 px-4 sm:px-6 lg:px-8 mt-10 w-full max-w-7xl">
-           <div className="bg-white shadow rounded-lg p-6 transition-all duration-300">
-             {renderContent()}
-           </div>
-         </main>
-        <Toaster position="top-right"/>
+      
+      <div className="md:pl-72">
+        <main className="p-6 animate-fade-in">
+          {/* Breadcrumbs */}
+          {activeTab !== 'dashboard' && (
+            <Breadcrumbs 
+              items={getBreadcrumbs()}
+            />
+          )}
+          
+          {renderContent()}
+        </main>
+        
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 5000,
+            className: 'glass rounded-2xl border border-white/20 shadow-2xl',
+            style: {
+              background: 'rgba(255, 255, 255, 0.25)',
+              backdropFilter: 'blur(16px)',
+              color: '#1f2937',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+            },
+            success: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+              style: {
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1))',
+              },
+            },
+            error: {
+              duration: 5000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+              style: {
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1))',
+              },
+            },
+            loading: {
+              iconTheme: {
+                primary: '#6366f1',
+                secondary: '#fff',
+              },
+              style: {
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.1))',
+              },
+            },
+          }}
+        />
       </div>
     </div>
   );

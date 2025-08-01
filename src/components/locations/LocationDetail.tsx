@@ -53,79 +53,125 @@ export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDet
     return <div className="p-4 text-center text-sm text-gray-700">Sede no encontrada</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
-      <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8">
-        {/* Header con botón de volver */}
-        <div className="flex items-center mb-6">
-          <button
-            onClick={onBack}
-            className="text-gray-500 hover:text-gray-700 mr-4 transition-colors"
-          >
-            <ChevronRight className="h-6 w-6 transform rotate-180" />
-          </button>
-          <h2 className="text-2xl font-bold text-gray-900">{location.name}</h2>
-        </div>
-        {/* Información de la sede */}
-        <div className="mb-6">
-          <div className="flex flex-col md:flex-row md:space-x-8">
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-gray-600">Dirección</h3>
-              <p className="mt-1 text-sm text-gray-800">{location.address}</p>
-            </div>
-            <div className="flex-1 mt-4 md:mt-0">
-              <h3 className="text-sm font-medium text-gray-600">Teléfono</h3>
-              <p className="mt-1 text-sm text-gray-800">{location.phone}</p>
+    <div className="max-w-6xl mx-auto p-6 animate-fade-in">
+      <div className="card-modern glass overflow-hidden hover-lift">
+        {/* Header con gradiente */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-8">
+          <div className="flex items-center">
+            <button
+              onClick={onBack}
+              className="text-white/80 hover:text-white mr-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200 hover-lift animate-glow"
+            >
+              <ChevronRight className="h-6 w-6 transform rotate-180" />
+            </button>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">{location.name}</h2>
+              <p className="text-emerald-100 mt-1">Información de la Sede</p>
             </div>
           </div>
         </div>
-        {/* Grupos asignados */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-600 mb-2">Grupos Asignados</h3>
-          {groups.length > 0 ? (
-            <>
-              {/* Vista en tabla para desktop */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-300 text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Nombre</th>
-                      <th className="px-4 py-2 text-left">Horario</th>
-                      <th className="px-4 py-2 text-left">Día(s)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {groups.map(grp => (
-                      <tr
-                        key={grp.id}
-                        onClick={() => onGroupClick(grp.id)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-4 py-2">{grp.name}</td>
-                        <td className="px-4 py-2">{grp.horario || '-'}</td>
-                        <td className="px-4 py-2">{grp.day_of_week || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+        {/* Contenido principal */}
+        <div className="p-6 sm:p-8">
+          {/* Información de la sede */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full mr-3"></div>
+              Información de la Sede
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Dirección</dt>
+                <dd className="text-lg font-semibold text-gray-900">{location.address}</dd>
               </div>
-              {/* Vista en tarjetas para mobile */}
-              <div className="block md:hidden space-y-4">
-                {groups.map(grp => (
-                  <div
-                    key={grp.id}
-                    onClick={() => onGroupClick(grp.id)}
-                    className="bg-white shadow rounded-lg p-4 cursor-pointer border border-gray-200"
-                  >
-                    <p className="text-blue-600 underline font-bold">{grp.name}</p>
-                    <p className="text-sm mt-1"><span className="font-medium">Horario:</span> {grp.horario || '-'}</p>
-                    <p className="text-sm mt-1"><span className="font-medium">Día(s):</span> {grp.day_of_week || '-'}</p>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Teléfono</dt>
+                <dd className="text-lg font-semibold text-gray-900">{location.phone}</dd>
+              </div>
+            </div>
+          </div>
+          {/* Grupos asignados */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full mr-3"></div>
+              Grupos Asignados
+            </h3>
+            {groups.length === 0 ? (
+              <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+                <p className="text-gray-500">No hay grupos asignados a esta sede.</p>
+              </div>
+            ) : (
+              <>
+                {/* Vista de escritorio */}
+                <div className="hidden md:block">
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Nombre
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Horario
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Alumnos
+                          </th>
+
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {groups.map((group) => (
+                          <tr
+                            key={group.id}
+                            onClick={() => onGroupClick(group.id)}
+                            className="hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 cursor-pointer transition-all duration-200 group"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 group-hover:text-emerald-700">
+                              {group.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              {group.schedule}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {group.student_count || 0} alumnos
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-gray-800">No hay grupos asignados</p>
-          )}
+                </div>
+
+                {/* Vista móvil */}
+                <div className="md:hidden space-y-4">
+                  {groups.map((group) => (
+                    <div
+                      key={group.id}
+                      onClick={() => onGroupClick(group.id)}
+                      className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-emerald-200 transition-all duration-200"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-semibold text-gray-900 text-lg">{group.name}</h4>
+                        <span className="text-lg font-bold text-emerald-600">${group.price}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{group.schedule}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {group.student_count || 0} alumnos
+                        </span>
+                        <div className="text-emerald-600">
+                          <ChevronRight className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

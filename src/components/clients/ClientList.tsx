@@ -5,7 +5,7 @@ import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
-import { Loader } from '../layout/Loader';
+import { SkeletonLoader } from '../shared/SkeletonLoader';
 import { parse } from 'date-fns';
 
 interface ExtendedClient extends Client {
@@ -70,7 +70,6 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
           payment_date,
           last_payment,
           method_of_payment,
-          payment_status,
           direction,
           client_locations (
             location_id,
@@ -152,7 +151,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       if (!client.client_groups || !client.client_groups.some(cg => cg.group_id === groupFilter))
         return false;
     }
-    const status = mapPaymentStatus(client.payment_status);
+    const realTimeStatus = getPaymentStatusColor(client.payment_date, client.last_payment);
+    const status = mapPaymentStatus(realTimeStatus);
     if (paymentFilter !== 'all' && status !== paymentFilter) return false;
     return true;
   });
@@ -186,11 +186,11 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
   };
 
   if (loading) {
-    return <Loader message="Cargando Alumnos..." />;
+    return <SkeletonLoader type="table" />;
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 animate-fade-in">
       {/* Mobile header: icon buttons for filters and add */}
       <div className="flex items-center justify-between mb-4 md:hidden">
         <button
@@ -210,40 +210,28 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       </div>
 
       {/* Filtros */}
-      <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded shadow-sm`}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+      <div className={`mb-4 ${showFilters ? 'block' : 'hidden md:block'}`}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
           <input
             type="text"
-            placeholder="Filtrar por DNI"
+            placeholder="Buscar por DNI..."
             value={dniFilter}
             onChange={(e) => setDniFilter(e.target.value)}
-            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
           <input
             type="text"
-            placeholder="Filtrar por Nombre o Apellido"
+            placeholder="Buscar por nombre..."
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
-            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
-          <select
-            value={groupFilter}
-            onChange={(e) => setGroupFilter(e.target.value)}
-            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">Todos los Grupos</option>
-            {groups.map(group => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </select>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
-            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
           >
-            <option value="">Todas las Sedes</option>
+            <option value="">Todas las sedes</option>
             {locations.map(loc => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}
@@ -251,9 +239,21 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
             ))}
           </select>
           <select
+            value={groupFilter}
+            onChange={(e) => setGroupFilter(e.target.value)}
+            className="border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+          >
+            <option value="">Todos los grupos</option>
+            {groups.map(group => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
+          <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
           >
             <option value="all">Todos los estados de pago</option>
             <option value="pagado">Pagado</option>
@@ -264,48 +264,53 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       </div>
 
       {/* Vista de tabla para desktop */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-300 text-xs sm:text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Nombre</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden sm:table-cell">DNI</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden sm:table-cell">Teléfono</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Dirección</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Edad</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden md:table-cell">Sede(s)</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900 hidden lg:table-cell">Grupo(s)</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Estado de Pago</th>
-                <th className="px-3 py-3.5 text-left font-semibold text-gray-900">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-300">
-              {paginatedClients.map(client => (
-                <tr key={client.id} onClick={() => client.id && onView(client.id)} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                    {client.name} {client.surname}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden sm:table-cell">{client.dni}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden sm:table-cell">{client.phone}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">
-                    {client.direction || '-'}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">{calculateAge(client.birth_date)}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden md:table-cell">
-                    {client.client_locations && client.client_locations.length > 0
-                      ? client.client_locations.map(cl => cl.locations?.name).join(', ')
-                      : '-'}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900 hidden lg:table-cell">
-                    {client.client_groups && client.client_groups.length > 0
-                      ? client.client_groups.map(cg => cg.groups?.name).join(', ')
-                      : '-'}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">
-                    <PaymentStatusBadge statusColor={client.payment_status || 'red'} />
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-gray-900">
+      <div className="hidden lg:block">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                <tr>
+                  <th className="px-4 py-4 text-left font-semibold text-white">👤 Nombre</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">🆔 DNI</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">📞 Teléfono</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">📍 Dirección</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">🎂 Edad</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">🏢 Sede(s)</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">👥 Grupo(s)</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">💳 Estado de Pago</th>
+                  <th className="px-4 py-4 text-left font-semibold text-white">⚙️ Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {paginatedClients.map((client, index) => (
+                  <tr key={client.id} onClick={() => client.id && onView(client.id)} className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 cursor-pointer ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-900 font-medium">
+                      {client.name} {client.surname}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">{client.dni}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">{client.phone}</td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">
+                      {client.direction || '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {calculateAge(client.birth_date)} años
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">
+                      {client.client_locations && client.client_locations.length > 0
+                        ? client.client_locations.map(cl => cl.locations?.name).join(', ')
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-700">
+                      {client.client_groups && client.client_groups.length > 0
+                        ? client.client_groups.map(cg => cg.groups?.name).join(', ')
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-900">
+                      <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-gray-900">
                     {isActive ? (
                       <>
                         <button
@@ -313,18 +318,20 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                             e.stopPropagation();
                             onEdit(client.id);
                           }}
-                          className="mr-2 text-indigo-600 hover:text-indigo-900 transition-colors"
+                          className="mr-3 p-2 text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg transition-all duration-200 hover:shadow-md"
+                          title="Editar alumno"
                         >
-                          <Edit className="h-5 w-5" />
+                          <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteClick(client.id);
                           }}
-                          className="text-red-600 hover:text-red-900 transition-colors"
+                          className="p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 hover:shadow-md"
+                          title="Eliminar alumno"
                         >
-                          <Trash className="h-5 w-5" />
+                          <Trash className="h-4 w-4" />
                         </button>
                       </>
                     ) : (
@@ -335,9 +342,10 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                               e.stopPropagation();
                               onEnable(client.id);
                             }}
-                            className="text-green-600 hover:text-green-900 transition-colors flex items-center gap-1"
+                            className="px-3 py-1.5 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-all duration-200 hover:shadow-md text-sm font-medium"
+                            title="Habilitar alumno"
                           >
-                            Habilitar
+                            ✓ Habilitar
                           </button>
                         )}
                       </>
@@ -345,15 +353,20 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                   </td>
                 </tr>
               ))}
-              {paginatedClients.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-3 py-4 text-center text-sm text-gray-500">
-                    No se encontraron alumnos.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                {paginatedClients.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-4xl mb-2">👥</div>
+                        <p className="text-gray-500 text-sm font-medium">No se encontraron alumnos</p>
+                        <p className="text-gray-400 text-xs mt-1">Intenta ajustar los filtros de búsqueda</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
@@ -378,63 +391,103 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
         )}
       </div>
 
-      {/* Vista en tarjetas para mobile */}
-      <div className="block md:hidden">
+      {/* Vista de cards para móvil y tablet */}
+      <div className="lg:hidden space-y-4">
         {paginatedClients.map(client => (
-          <div
-            key={client.id}
-            onClick={() => onView(client.id)}
-            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
-          >
-            <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
-            <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
-            <p className="text-gray-700"><strong>Teléfono Padre/Madre:</strong> {client.phone}</p>
-            <p className="text-gray-700"><strong>Dirección:</strong> {client.direction || '-'}</p>
-            <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
-            <p className="text-gray-700">
-              <strong>Sede(s):</strong> {client.client_locations && client.client_locations.length > 0
-                ? client.client_locations.map(cl => cl.locations?.name).join(', ')
-                : '-'}
-            </p>
-            <p className="text-gray-700">
-              <strong>Grupo(s):</strong> {client.client_groups && client.client_groups.length > 0
-                ? client.client_groups.map(cg => cg.groups?.name).join(', ')
-                : '-'}
-            </p>
-            <p className="text-gray-700">
-              <strong>Estado de Pago:</strong> <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'} />
-            </p>
-            <div className="flex space-x-2 mt-2">
+          <div key={client.id} onClick={() => client.id && onView(client.id)} className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  {client.name.charAt(0)}{client.surname.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-lg">{client.name} {client.surname}</h3>
+                  <p className="text-gray-500 text-sm">👤 Alumno</p>
+                </div>
+              </div>
+              <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-1">🆔 DNI</p>
+                <p className="text-gray-900 font-semibold">{client.dni}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-1">📞 Teléfono</p>
+                <p className="text-gray-900 font-semibold">{client.phone}</p>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-1">🎂 Edad</p>
+                <p className="text-gray-900 font-semibold">{calculateAge(client.birth_date)} años</p>
+              </div>
+              {client.direction && (
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-1">📍 Dirección</p>
+                  <p className="text-gray-900 font-semibold">{client.direction}</p>
+                </div>
+              )}
+            </div>
+            
+            {(client.client_locations?.length > 0 || client.client_groups?.length > 0) && (
+              <div className="space-y-2 mb-4">
+                {client.client_locations && client.client_locations.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-xs text-gray-500 font-medium mr-2">🏢 Sedes:</span>
+                    {client.client_locations.map((cl, index) => (
+                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        {cl.locations?.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {client.client_groups && client.client_groups.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-xs text-gray-500 font-medium mr-2">👥 Grupos:</span>
+                    {client.client_groups.map((cg, index) => (
+                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {cg.groups?.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2 pt-3 border-t border-gray-100">
               {isActive ? (
                 <>
                   <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(client.id); }}
-                    className="text-indigo-600 hover:text-indigo-900"
-                    aria-label="Editar"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(client.id);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg transition-all duration-200 hover:shadow-md font-medium"
                   >
-                    <Edit className="h-5 w-5" />
+                    <Edit className="h-4 w-4" />
+                    <span>Editar</span>
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(client.id); }}
-                    className="text-red-600 hover:text-red-900 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(client.id);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:text-white hover:bg-red-600 rounded-lg transition-all duration-200 hover:shadow-md font-medium"
                   >
-                    <Trash className="h-5 w-5" />
+                    <Trash className="h-4 w-4" />
+                    <span>Eliminar</span>
                   </button>
                 </>
               ) : (
-                <>
-                  {onEnable && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEnable(client.id);
-                      }}
-                      className="text-green-600 hover:text-green-900 transition-colors text-xs"
-                    >
-                      Habilitar Alumno
-                    </button>
-                  )}
-                </>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEnable(client.id);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-all duration-200 hover:shadow-md font-medium"
+                >
+                  <span>✓ Habilitar</span>
+                </button>
               )}
             </div>
           </div>
