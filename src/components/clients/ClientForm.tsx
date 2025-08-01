@@ -357,23 +357,31 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
   if (loading) return <div className="p-4 text-center">Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Alta de un Alumno</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Ingrese el nombre (solo letras)"
-              required
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-          </div>
+    <div className="max-w-4xl mx-auto p-6 animate-fade-in">
+      <div className="bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+        {/* Header con gradiente */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">Alta de un Alumno</h2>
+          <p className="text-blue-100 text-center mt-2">Complete la información del nuevo alumno</p>
+            </div>
+        
+        {/* Contenido del formulario */}
+        <div className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6 card-modern glass">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-300"
+                  placeholder="Ingrese el nombre (solo letras)"
+                  required
+                />
+                {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="mr-1">⚠️</span>{errors.name}</p>}
+              </div>
           <div>
             <label htmlFor="surname" className="block text-sm font-medium text-gray-700">Apellido</label>
             <input
@@ -463,9 +471,9 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             {errors.payment_date && <p className="text-red-500 text-xs mt-1">{errors.payment_date}</p>}
           </div>
         </div>
-        <fieldset className="border border-gray-200 p-4 rounded-md">
-          <legend className="text-lg font-medium text-gray-700">Sedes</legend>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+            <fieldset className="bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 p-6 rounded-xl">
+              <legend className="text-lg font-semibold text-gray-800 px-3">🏢 Sedes</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             {locations.map(loc => (
               <div key={loc.id} className="flex items-center">
                 <input
@@ -473,17 +481,17 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
                   id={`loc-${loc.id}`}
                   checked={formData.location_ids.includes(loc.id)}
                   onChange={() => handleLocationChange(loc.id)}
-                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 hover:border-indigo-500"
+                  className="h-5 w-5 text-indigo-600 border-gray-300 rounded-md focus:ring-indigo-500 hover:border-indigo-500 transition-colors duration-200"
                 />
-                <label htmlFor={`loc-${loc.id}`} className="ml-2 text-sm text-gray-700">
+                <label htmlFor={`loc-${loc.id}`} className="ml-3 text-sm font-medium text-gray-700 cursor-pointer hover:text-indigo-600 transition-colors duration-200">
                   {loc.name}
                 </label>
               </div>
             ))}
-          </div>
-        </fieldset>
-        <fieldset className="border border-gray-200 p-4 rounded-md">
-          <legend className="text-lg font-medium text-gray-700">Grupos</legend>
+              </div>
+            </fieldset>
+            <fieldset className="bg-gradient-to-r from-gray-50 to-green-50 border border-gray-200 p-6 rounded-xl">
+              <legend className="text-lg font-semibold text-gray-800 px-3">👥 Grupos</legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
             {groups.map(grp => (
               <div key={grp.id} className="flex items-center">
@@ -501,24 +509,25 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             ))}
           </div>
         </fieldset>
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <div className="flex flex-col sm:flex-row justify-end gap-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="w-full sm:w-auto py-2 px-4 border rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-            >
-              Guardar
-            </button>
-          </div>
+            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50 px-6 pb-6">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="w-full sm:w-auto py-3 px-6 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 hover-lift"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto py-3 px-6 btn-gradient text-white rounded-xl disabled:opacity-50 transition-all duration-200 hover-lift animate-glow"
+              >
+                {loading ? 'Guardando...' : (client ? 'Actualizar' : 'Crear')}
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   );
 }

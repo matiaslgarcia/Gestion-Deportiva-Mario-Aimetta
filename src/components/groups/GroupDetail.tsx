@@ -16,30 +16,32 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
   const [group, setGroup] = useState<Group | null>(null);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filtros para alumnos del grupo
   const [dniFilter, setDniFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('all');
-  // Estado para mostrar/ocultar filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
-
-  // Paginado
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
   useEffect(() => {
     const fetchGroup = async () => {
-      const { data, error } = await supabase
-        .from('groups')
-        .select(`
-          *,
-          locations:location_id (id, name)
-        `)
-        .eq('id', groupId)
-        .single();
-      if (error) console.error(error);
-      else setGroup(data);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .select(`
+            *,
+            locations (
+              id,
+              name
+            )
+          `)
+          .eq('id', groupId)
+          .single();
+        if (error) throw error;
+        setGroup(data);
+      } catch (error) {
+        // Error silencioso al cargar grupo
+      }
     };
 
     const fetchClients = async () => {
@@ -60,10 +62,13 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
             direction,
             client_groups (
               group_id,
-              groups ( id, name )
+              groups (
+                id,
+                name
+              )
             )
           `)
-          .eq('is_active', true);  // Filtra solo alumnos activos
+          .eq('is_active', true);
         if (error) throw error;
         const groupClients = (data || []).filter((client: any) =>
           client.client_groups && client.client_groups.some((cg: any) => cg.group_id === groupId)
@@ -84,8 +89,8 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
     const birth = new Date(birth_date);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
     return age;
@@ -131,173 +136,231 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
     return <div className="p-4 text-center text-sm">Grupo no encontrado</div>;
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 md:p-8">
-      <div className="flex items-center mb-6">
-        <button onClick={onBack} className="text-gray-500 hover:text-gray-700 mr-4">
-          <ChevronRight className="h-6 w-6 transform rotate-180" />
-        </button>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{group.name}</h2>
-      </div>
-      <div className="mb-4 space-y-1">
-        <p className="text-gray-700 text-sm sm:text-base">
-          <span className="font-semibold">Horario:</span> {group.horario}
-        </p>
-        <p className="text-gray-700 text-sm sm:text-base">
-          <span className="font-semibold">Día(s):</span> {group.day_of_week}
-        </p>
-        <p className="text-gray-700 text-sm sm:text-base">
-          <span className="font-semibold">Sede:</span> {group.locations ? group.locations.name : '-'}
-        </p>
-      </div>
-      {/* Botón de filtros en mobile */}
-      <div className="mb-4 md:hidden">
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="p-2 bg-indigo-600 text-white rounded-full"
-          aria-label="Mostrar filtros"
-        >
-          <Filter className="h-6 w-6" />
-        </button>
-      </div>
-      {/* Filtros */}
-      <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-4 p-4 bg-gray-50 rounded`}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            type="text"
-            placeholder="Filtrar por DNI"
-            value={dniFilter}
-            onChange={(e) => setDniFilter(e.target.value)}
-            className="border rounded-md py-2 px-3 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <input
-            type="text"
-            placeholder="Filtrar por Nombre o Apellido"
-            value={nameFilter}
-            onChange={(e) => setNameFilter(e.target.value)}
-            className="border rounded-md py-2 px-3 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="border rounded-md py-2 px-3 text-xs sm:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">Todos los estados de pago</option>
-            <option value="pagado">Pagado</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="no pagado">No Pagado</option>
-          </select>
+    <div className="max-w-7xl mx-auto p-6 animate-fade-in">
+      <div className="card-modern glass overflow-hidden border border-gray-200 hover-lift">
+        {/* Header con gradiente */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button 
+                onClick={onBack} 
+                className="text-white/80 hover:text-white mr-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200 hover-lift animate-glow"
+              >
+                <ChevronRight className="h-6 w-6 transform rotate-180" />
+              </button>
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white">
+                  {group.name}
+                </h2>
+                <p className="text-blue-100 mt-1">Información del Grupo</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <h3 className="text-lg sm:text-xl font-semibold mb-4">Alumnos en este Grupo</h3>
-      {/* Vista de tabla para tablet/desktop */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Nombre</th>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">DNI</th>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Teléfono</th>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Dirección</th>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Edad</th>
-                <th className="px-2 sm:px-4 py-2 text-left text-xs sm:text-sm font-semibold text-gray-700">Estado de Pago</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
+
+        {/* Contenido principal */}
+        <div className="p-6 sm:p-8">
+          {/* Información del grupo */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-indigo-500 rounded-full mr-3"></div>
+              Información del Grupo
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Sede</dt>
+                <dd className="text-lg font-semibold text-gray-900">{group.locations?.name || 'No asignada'}</dd>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Horario</dt>
+                <dd className="text-lg font-semibold text-gray-900">{group.horario || 'No especificado'}</dd>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <dt className="text-sm font-medium text-gray-500 mb-1">Día(s)</dt>
+                <dd className="text-lg font-semibold text-gray-900">{group.day_of_week || 'No especificado'}</dd>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de alumnos */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <div className="w-1 h-6 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full mr-3"></div>
+                Alumnos del Grupo ({filteredClients.length})
+              </h3>
+              {/* Botón de filtros para mobile */}
+              <div className="md:hidden">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="p-3 btn-gradient text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover-lift animate-glow"
+                  aria-label="Mostrar filtros"
+                >
+                  <Filter className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filtros */}
+            <div className={`${showFilters ? 'block' : 'hidden'} md:block mb-6`}>
+              <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-700 mb-4">Filtros de Búsqueda</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">DNI</label>
+                    <input
+                      type="text"
+                      placeholder="Filtrar por DNI"
+                      value={dniFilter}
+                      onChange={(e) => setDniFilter(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Nombre o Apellido</label>
+                    <input
+                      type="text"
+                      placeholder="Filtrar por Nombre o Apellido"
+                      value={nameFilter}
+                      onChange={(e) => setNameFilter(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">Estado de Pago</label>
+                    <select
+                      value={paymentFilter}
+                      onChange={(e) => setPaymentFilter(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl py-3 px-4 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                    >
+                      <option value="all">Todos los estados de pago</option>
+                      <option value="pagado">Pagado</option>
+                      <option value="pendiente">Pendiente</option>
+                      <option value="no pagado">No Pagado</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vista de tabla para desktop */}
+            <div className="hidden md:block">
+              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200">
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nombre</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">DNI</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Teléfono</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Dirección</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Edad</th>
+                        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Estado de Pago</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {paginatedClients.map((client, index) => (
+                        <tr
+                          key={client.id}
+                          onClick={() => onClientClick(client.id)}
+                          className={`hover:bg-blue-50 transition-all duration-200 cursor-pointer ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
+                          }`}
+                        >
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {client.name} {client.surname}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{client.dni}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{client.phone}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{client.direction}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{calculateAge(client.birth_date)}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            <PaymentStatusBadge
+                              statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                      {paginatedClients.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
+                            No se encontraron alumnos.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Vista en tarjetas para mobile */}
+            <div className="block md:hidden">
               {paginatedClients.map(client => (
-                <tr
+                <div
                   key={client.id}
                   onClick={() => onClientClick(client.id)}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
                 >
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                    {client.name} {client.surname}
-                  </td>
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.dni}</td>
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.phone}</td>
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{client.direction}</td>
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">{calculateAge(client.birth_date)}</td>
-                  <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-800">
-                    <PaymentStatusBadge
-                      statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'}
-                    />
-                  </td>
-                </tr>
+                  <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
+                  <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
+                  <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
+                  <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
+                  <p className="text-gray-700">
+                    <strong>Estado de Pago:</strong>{' '}
+                    <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
+                  </p>
+                </div>
               ))}
-              {paginatedClients.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-2 sm:px-4 py-2 text-center text-xs sm:text-sm text-gray-500">
-                    No se encontraron alumnos.
-                  </td>
-                </tr>
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-4">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Paginado para desktop */}
+            <div className="hidden md:block">
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-4">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      {/* Vista en tarjetas para mobile */}
-      <div className="block md:hidden">
-        {paginatedClients.map(client => (
-          <div
-            key={client.id}
-            onClick={() => onClientClick(client.id)}
-            className="bg-white shadow rounded p-4 mb-4 cursor-pointer"
-          >
-            <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
-            <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
-            <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
-            <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
-            <p className="text-gray-700">
-              <strong>Estado de Pago:</strong>{' '}
-              <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
-            </p>
-          </div>
-        ))}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            <span className="text-sm text-gray-700">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
-      </div>
-      {/* Paginado para la vista en tabla */}
-      <div className="hidden md:block">
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            <span className="text-sm text-gray-700">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

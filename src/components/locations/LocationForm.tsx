@@ -169,82 +169,96 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
   if (loading) return <div className="p-4 text-center">Loading...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-6 text-center">Alta de una Sede</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="sm:col-span-2">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700">Dirección</label>
-            <input
-              type="text"
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              required
-            />
-            {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono</label>
-            <input
-              type="text"
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-        </div>
-        <fieldset className="border border-gray-200 p-4 rounded-md">
-          <legend className="text-lg font-medium text-gray-700">Asignación de Grupos</legend>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-            {groups.map(grp => (
-              <div key={grp.id} className="flex items-center">
+    <div className="max-w-4xl mx-auto p-6 animate-fade-in">
+      <div className="bg-gradient-to-br from-white to-gray-50 shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+        {/* Header con gradiente */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">Alta de una Sede</h2>
+          <p className="text-purple-100 text-center mt-2">Configure la información de la nueva sede</p>
+            </div>
+        
+        {/* Contenido del formulario */}
+        <div className="p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6 card-modern glass p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="sm:col-span-2">
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">🏢 Nombre de la Sede</label>
                 <input
-                  type="checkbox"
-                  id={`grp-${grp.id}`}
-                  checked={selectedGroupIds.includes(grp.id)}
-                  onChange={() => setSelectedGroupIds(prev =>
-                    prev.includes(grp.id) ? prev.filter(id => id !== grp.id) : [...prev, grp.id]
-                  )}
-                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 hover:border-indigo-500"
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                  placeholder="Ingrese el nombre de la sede"
+                  required
                 />
-                <label htmlFor={`grp-${grp.id}`} className="ml-2 text-sm text-gray-700">
-                  {grp.name}
-                </label>
+                {errors.name && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="mr-1">⚠️</span>{errors.name}</p>}
               </div>
-            ))}
-          </div>
-        </fieldset>
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="py-2 px-4 border rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          >
-            Guardar
-          </button>
+              <div className="sm:col-span-2">
+                <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">📍 Dirección</label>
+                <input
+                  type="text"
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                  placeholder="Ingrese la dirección"
+                  required
+                />
+                {errors.address && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="mr-1">⚠️</span>{errors.address}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">📞 Teléfono</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 hover:border-purple-300"
+                  placeholder="Ingrese el teléfono"
+                />
+                {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="mr-1">⚠️</span>{errors.phone}</p>}
+              </div>
         </div>
-      </form>
+            <div className="bg-gradient-to-r from-gray-50 to-purple-50 border border-gray-200 p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">👥 Asignación de Grupos</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {groups.map(grp => (
+                  <div key={grp.id} className="flex items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition-all duration-200">
+                    <input
+                      type="checkbox"
+                      id={`grp-${grp.id}`}
+                      checked={selectedGroupIds.includes(grp.id)}
+                      onChange={() => setSelectedGroupIds(prev =>
+                        prev.includes(grp.id) ? prev.filter(id => id !== grp.id) : [...prev, grp.id]
+                      )}
+                      className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 hover:border-purple-500"
+                    />
+                    <label htmlFor={`grp-${grp.id}`} className="ml-3 text-sm font-medium text-gray-700">
+                      {grp.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="w-full sm:w-auto py-3 px-6 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all duration-200 shadow-sm hover-lift"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:w-auto py-3 px-6 btn-gradient text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hover-lift animate-glow"
+              >
+                🏢 Guardar Sede
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
