@@ -22,7 +22,9 @@ export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDet
         .select('*')
         .eq('id', locationId)
         .single();
-      if (error) console.error(error);
+      if (error) {
+        // Error silencioso al cargar ubicación
+      }
       else setLocation(data);
     };
 
@@ -35,7 +37,7 @@ export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDet
         if (error) throw error;
         setGroups(data || []);
       } catch (error) {
-        console.error('Error fetching groups for location:', error);
+        // Error silencioso al cargar grupos
       } finally {
         setLoading(false);
       }

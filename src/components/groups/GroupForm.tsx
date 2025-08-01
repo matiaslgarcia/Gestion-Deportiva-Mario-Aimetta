@@ -27,7 +27,7 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
         if (error) throw error;
         setLocations(data || []);
       } catch (error) {
-        console.error('Error fetching locations:', error);
+        // Error silencioso al cargar ubicaciones
       } finally {
         setLoading(false);
       }
@@ -42,7 +42,7 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
             .eq('id', group.id)
             .single();
           if (error) {
-            console.error('Error fetching group:', error);
+            // Error silencioso al cargar grupo
           } else {
             setFormData({
               name: data.name || '',
@@ -52,7 +52,7 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
             });
           }
         } catch (error) {
-          console.error(error);
+          // Error silencioso al cargar datos del grupo
         }
       } else if (group) {
         setFormData({
@@ -70,11 +70,49 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.horario.trim()) newErrors.horario = 'El horario es requerido';
-    if (!formData.day_of_week.trim()) newErrors.day_of_week = 'El día de clase es requerido';
-    if (!formData.location_id) newErrors.location_id = 'La sede es requerida';
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre del grupo es obligatorio';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    }
+    
+    if (!formData.horario.trim()) {
+      newErrors.horario = 'El horario es obligatorio';
+    } else if (!/^\d{1,2}:\d{2}(-\d{1,2}:\d{2})?/.test(formData.horario.trim())) {
+      newErrors.horario = 'Formato de horario inválido. Use formato HH:MM o HH:MM-HH:MM';
+    }
+    
+    if (!formData.day_of_week.trim()) {
+      newErrors.day_of_week = 'El día de clase es obligatorio';
+    }
+    
+    if (!formData.location_id) {
+      newErrors.location_id = 'Debe seleccionar una sede';
+    }
+    
     return newErrors;
+  };
+
+  const checkGroupExists = async (name: string, excludeId?: string) => {
+    try {
+      let query = supabase
+        .from('groups')
+        .select('id')
+        .ilike('name', name.trim());
+      
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return data && data.length > 0;
+    } catch (error) {
+       // Error silencioso al verificar existencia del grupo
+       return false;
+     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,27 +120,54 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error('Complete los campos requeridos');
+      toast.error('Por favor, corrija los errores en el formulario');
       return;
     }
+    
+    // Verificar si ya existe un grupo con el mismo nombre
+    const groupExists = await checkGroupExists(formData.name, group?.id);
+    if (groupExists) {
+      setErrors({ name: 'Ya existe un grupo con este nombre' });
+      toast.error('Ya existe un grupo con este nombre');
+      return;
+    }
+    
     setErrors({});
+    
     try {
       if (group && group.id) {
-        await supabase
+        const { error } = await supabase
           .from('groups')
           .update(formData)
           .eq('id', group.id);
+        
+        if (error) throw error;
         toast.success('Grupo actualizado correctamente');
       } else {
-        await supabase
+        const { error } = await supabase
           .from('groups')
           .insert([formData]);
+        
+        if (error) throw error;
         toast.success('Grupo agregado correctamente');
       }
       onSave();
-    } catch (error) {
-      console.error('Error saving group:', error);
-      toast.error('Ocurrió un error al guardar el grupo');
+    } catch (error: any) {
+       // Error capturado al guardar grupo
+      
+      // Manejo específico de errores
+      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
+        setErrors({ name: 'Ya existe un grupo con este nombre' });
+        toast.error('Ya existe un grupo con este nombre');
+      } else if (error?.code === '23503') {
+        setErrors({ location_id: 'La sede seleccionada no es válida' });
+        toast.error('La sede seleccionada no es válida');
+      } else if (error?.message?.includes('location_id')) {
+        setErrors({ location_id: 'Error con la sede seleccionada' });
+        toast.error('Error con la sede seleccionada');
+      } else {
+        toast.error('Ocurrió un error al guardar el grupo. Verifique los datos e intente nuevamente.');
+      }
     }
   };
 

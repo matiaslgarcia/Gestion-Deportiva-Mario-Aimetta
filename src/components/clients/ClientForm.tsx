@@ -29,13 +29,26 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const initializeComponent = async () => {
+      try {
+
+        await Promise.all([fetchLocations(), fetchGroups()]);
+      } catch (error) {
+         // Error silencioso durante la inicialización
+         toast.error('Error al inicializar el formulario');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const fetchLocations = async () => {
       try {
         const { data, error } = await supabase.from('locations').select('*');
         if (error) throw error;
         setLocations(data || []);
       } catch (error) {
-        console.error('Error fetching locations:', error);
+         // Error silencioso al cargar ubicaciones
+         throw error;
       }
     };
 
@@ -45,13 +58,12 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         if (error) throw error;
         setGroups(data || []);
       } catch (error) {
-        console.error('Error fetching groups:', error);
+         // Error silencioso al cargar grupos
+         throw error;
       }
     };
 
-    fetchLocations();
-    fetchGroups();
-    setLoading(false);
+    initializeComponent();
   }, []);
 
   useEffect(() => {
@@ -72,7 +84,6 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
           .single();
         
         if (error) {
-          console.error('Error fetching client:', error);
         } else {
           const locationIds = data.client_locations?.map((cl: { location_id: string }) => cl.location_id) || [];
           const groupIds = data.client_groups?.map((cg: { group_id: string }) => cg.group_id) || [];
@@ -128,13 +139,86 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.surname.trim()) newErrors.surname = 'El apellido es requerido';
-    if (!formData.dni.trim()) newErrors.dni = 'El DNI es requerido';
-    if (!formData.phone.trim()) newErrors.phone = 'El teléfono es requerido';
-    if (!formData.birth_date) newErrors.birth_date = 'La fecha de nacimiento es requerida';
-    if (!formData.payment_date) newErrors.payment_date = 'La fecha de pago es requerida';
+    
+    // Validación de nombre
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre es obligatorio';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.name.trim())) {
+      newErrors.name = 'El nombre solo puede contener letras y espacios';
+    }
+    
+    // Validación de apellido
+    if (!formData.surname.trim()) {
+      newErrors.surname = 'El apellido es obligatorio';
+    } else if (formData.surname.trim().length < 2) {
+      newErrors.surname = 'El apellido debe tener al menos 2 caracteres';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.surname.trim())) {
+      newErrors.surname = 'El apellido solo puede contener letras y espacios';
+    }
+    
+    // Validación de DNI
+    if (!formData.dni.trim()) {
+      newErrors.dni = 'El DNI es obligatorio';
+    } else if (!/^\d{7,8}$/.test(formData.dni.trim())) {
+      newErrors.dni = 'El DNI debe tener 7 u 8 dígitos numéricos';
+    }
+    
+    // Validación de fecha de nacimiento
+    if (!formData.birth_date) {
+      newErrors.birth_date = 'La fecha de nacimiento es obligatoria';
+    } else {
+      const birthDate = new Date(formData.birth_date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      if (age < 3 || age > 120) {
+        newErrors.birth_date = 'La edad debe estar entre 3 y 120 años';
+      }
+    }
+    
+    // Validación de teléfono
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'El teléfono es obligatorio';
+    } else if (!/^[\d\s\-\+\(\)]{8,15}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'El teléfono debe tener entre 8 y 15 dígitos';
+    }
+    
+    // Validación de dirección
+    if (!formData.direction.trim()) {
+      newErrors.direction = 'La dirección es obligatoria';
+    } else if (formData.direction.trim().length < 5) {
+      newErrors.direction = 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    // Validación de fecha de pago
+    if (!formData.payment_date) {
+      newErrors.payment_date = 'La fecha de pago es obligatoria';
+    }
+    
     return newErrors;
+  };
+
+  const checkDniExists = async (dni: string, excludeId?: string): Promise<boolean> => {
+    try {
+      let query = supabase.from('clients').select('id').eq('dni', dni);
+      
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        // Error silencioso al verificar DNI
+        return false;
+      }
+      
+      return data && data.length > 0;
+    } catch (error) {
+      // Error silencioso al verificar DNI
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -142,10 +226,19 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error('Complete los campos requeridos');
+      toast.error('Por favor, corrija los errores en el formulario');
       return;
     }
     setErrors({}); // Limpiar errores
+    
+    // Verificar si el DNI ya existe
+    const dniExists = await checkDniExists(formData.dni, client?.id);
+    if (dniExists) {
+      setErrors({ dni: 'Ya existe un cliente con este DNI' });
+      toast.error('Ya existe un cliente con este DNI. Por favor, verifica el número de documento.');
+      return;
+    }
+    
     try {
       if (client && client.id) {
         // Actualiza registro del cliente
@@ -204,7 +297,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               birth_date: formData.birth_date,
               payment_date: formData.payment_date,
               method_of_payment: formData.method_of_payment,
-              direction: formData.direction,
+              direction: formData.direction
             }
           ])
           .select()
@@ -230,9 +323,34 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         }
       }
       onSave();
-    } catch (error) {
-      console.error('Error saving client:', error);
-      toast.error('Ocurrió un error al guardar el cliente');
+    } catch (error: any) {
+      // Error capturado al guardar cliente
+      
+      // Manejo específico de errores
+      if (error?.status === 409 || error?.statusCode === 409 || 
+          error?.code === '23505' ||
+          error?.message?.toLowerCase().includes('duplicate') ||
+          error?.message?.toLowerCase().includes('unique') ||
+          error?.message?.toLowerCase().includes('dni')) {
+        setErrors({ dni: 'Ya existe un cliente con este DNI. Por favor, verifica el número de documento.' });
+        toast.error('Ya existe un cliente con este DNI. Por favor, verifica el número de documento.');
+      } else if (error?.code === '23503') {
+        toast.error('Error de referencia en la base de datos. Verifique que los grupos seleccionados sean válidos.');
+      } else if (error?.message?.includes('name')) {
+        setErrors({ name: 'Error con el nombre del cliente' });
+        toast.error('Error con el nombre del cliente');
+      } else if (error?.message?.includes('phone')) {
+        setErrors({ phone: 'Error con el número de teléfono' });
+        toast.error('Error con el número de teléfono');
+      } else if (error?.message?.includes('email')) {
+        setErrors({ email: 'Error con el email' });
+        toast.error('Error con el email');
+      } else if (error?.message?.includes('birth_date')) {
+        setErrors({ birth_date: 'Error con la fecha de nacimiento' });
+        toast.error('Error con la fecha de nacimiento');
+      } else {
+        toast.error('Ocurrió un error al guardar el cliente. Verifique los datos e intente nuevamente.');
+      }
     }
   };
 
@@ -251,6 +369,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Ingrese el nombre (solo letras)"
               required
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
@@ -263,6 +382,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               value={formData.surname}
               onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Ingrese el apellido (solo letras)"
               required
             />
             {errors.surname && <p className="text-red-500 text-xs mt-1">{errors.surname}</p>}
@@ -275,6 +395,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               value={formData.dni}
               onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Ingrese DNI (7 u 8 dígitos)"
               required
             />
             {errors.dni && <p className="text-red-500 text-xs mt-1">{errors.dni}</p>}
@@ -287,6 +408,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Ej: +54 9 11 1234-5678 (8-15 dígitos)"
               required
             />
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
@@ -299,11 +421,11 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
               value={formData.direction}
               onChange={(e) => setFormData({ ...formData, direction: e.target.value })}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Ingrese dirección completa (mín. 5 caracteres)"
               required
             />
             {errors.direction && <p className="text-red-500 text-xs mt-1">{errors.direction}</p>}
-          </div>
-          
+          </div>         
           <div>
             <label htmlFor="method_of_payment" className="block text-sm font-medium text-gray-700">Método de Pago</label>
             <select
@@ -379,20 +501,22 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             ))}
           </div>
         </fieldset>
-        <div className="flex flex-col sm:flex-row justify-end gap-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="w-full sm:w-auto py-2 px-4 border rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          >
-            Guardar
-          </button>
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full sm:w-auto py-2 px-4 border rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="w-full sm:w-auto py-2 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Guardar
+            </button>
+          </div>
         </div>
       </form>
     </div>

@@ -70,7 +70,7 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
         );
         setClients(groupClients);
       } catch (error) {
-        console.error('Error fetching clients for group:', error);
+        // Error silencioso al cargar clientes del grupo
       } finally {
         setLoading(false);
       }

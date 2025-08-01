@@ -64,7 +64,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
       .eq('id', clientId)
       .single();
     if (error) {
-      console.error(error);
+      // Error silencioso al cargar cliente
     } else {
       setClient(data);
     }
@@ -88,7 +88,6 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
         .update({ last_payment: isoTime, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
-        console.error('Error actualizando el pago:', error);
         toast.error('Error actualizando el pago');
       } else {
         toast.success('¡Pago actualizado correctamente!');
@@ -96,7 +95,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
         fetchClient();
       }
     } catch (err) {
-      console.error(err);
+      // Error capturado al actualizar pago
       toast.error('Error actualizando el pago');
     }
   };
@@ -111,7 +110,6 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
         .update({ last_payment: null, payment_status: newStatus })
         .eq('id', clientId);
       if (error) {
-        console.error('Error actualizando estado de pago:', error);
         toast.error('Error actualizando estado de pago');
       } else {
         toast.success('Estado de pago actualizado a No Pagado');
@@ -119,7 +117,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
         fetchClient();
       }
     } catch (err) {
-      console.error(err);
+      // Error capturado al actualizar estado de pago
       toast.error('Error actualizando estado de pago');
     }
   };
@@ -141,14 +139,13 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
           .eq('id', clientId);
         
         if (error) {
-          console.error('Error al dar de baja al alumno:', error);
           toast.error('Error al dar de baja al alumno');
         } else {
           toast.success('Alumno dado de baja correctamente');
           onDelete(clientId);
         }
       } catch (err) {
-        console.error(err);
+        // Error capturado al dar de baja alumno
         toast.error('Error al dar de baja al alumno');
       }
     }

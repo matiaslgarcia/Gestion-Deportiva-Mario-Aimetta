@@ -45,8 +45,8 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
       if (error) throw error;
       setGroups(data || []);
     } catch (error) {
-      console.error('Error fetching groups:', error);
-    } finally {
+        // Error silencioso al cargar grupos
+      } finally {
       setLoading(false);
     }
   };
@@ -57,8 +57,8 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
       if (error) throw error;
       setLocations(data || []);
     } catch (error) {
-      console.error('Error fetching locations:', error);
-    }
+        // Error silencioso al cargar ubicaciones
+      }
   };
 
   const fetchClientGroups = async () => {

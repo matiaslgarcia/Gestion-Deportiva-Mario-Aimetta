@@ -27,7 +27,7 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
         if (error) throw error;
         setGroups(data || []);
       } catch (error) {
-        console.error('Error fetching groups:', error);
+        // Error silencioso al cargar grupos
       }
     };
 
@@ -40,7 +40,7 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
             .eq('id', location.id)
             .single();
           if (error) {
-            console.error('Error fetching location:', error);
+            // Error silencioso al cargar ubicación
           } else {
             setFormData({
               name: data.name || '',
@@ -49,7 +49,7 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
             });
           }
         } catch (error) {
-          console.error(error);
+          // Error silencioso al cargar datos de ubicación
         }
       } else if (location) {
         setFormData({
@@ -65,10 +65,45 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.address.trim()) newErrors.address = 'La dirección es requerida';
-    // Aquí se puede agregar validación para teléfono si es requerido.
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'El nombre de la sede es obligatorio';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    }
+    
+    if (!formData.address.trim()) {
+      newErrors.address = 'La dirección es obligatoria';
+    } else if (formData.address.trim().length < 5) {
+      newErrors.address = 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    if (formData.phone.trim() && !/^[\d\s\-\+\(\)]+$/.test(formData.phone.trim())) {
+      newErrors.phone = 'El formato del teléfono no es válido';
+    }
+    
     return newErrors;
+  };
+
+  const checkLocationExists = async (name: string, excludeId?: string) => {
+    try {
+      let query = supabase
+        .from('locations')
+        .select('id')
+        .ilike('name', name.trim());
+      
+      if (excludeId) {
+        query = query.neq('id', excludeId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return data && data.length > 0;
+    } catch (error) {
+       // Error silencioso al verificar existencia de ubicación
+       return false;
+     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,16 +111,28 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast.error('Complete los campos requeridos');
+      toast.error('Por favor, corrija los errores en el formulario');
       return;
     }
+    
+    // Verificar si ya existe una sede con el mismo nombre
+    const locationExists = await checkLocationExists(formData.name, location?.id);
+    if (locationExists) {
+      setErrors({ name: 'Ya existe una sede con este nombre' });
+      toast.error('Ya existe una sede con este nombre');
+      return;
+    }
+    
     setErrors({});
+    
     try {
       if (location && location.id) {
-        await supabase
+        const { error } = await supabase
           .from('locations')
           .update(formData)
           .eq('id', location.id);
+        
+        if (error) throw error;
         toast.success('Sede actualizada correctamente');
       } else {
         const { data: newLocation, error } = await supabase
@@ -93,13 +140,29 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
           .insert([formData])
           .select()
           .single();
+        
         if (error) throw error;
         toast.success('Sede agregada correctamente');
       }
       onSave();
-    } catch (error) {
-      console.error('Error saving location:', error);
-      toast.error('Ocurrió un error al guardar la sede');
+    } catch (error: any) {
+       // Error capturado al guardar ubicación
+      
+      // Manejo específico de errores
+      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
+        setErrors({ name: 'Ya existe una sede con este nombre' });
+        toast.error('Ya existe una sede con este nombre');
+      } else if (error?.code === '23503') {
+        toast.error('Error de referencia en la base de datos');
+      } else if (error?.message?.includes('name')) {
+        setErrors({ name: 'Error con el nombre de la sede' });
+        toast.error('Error con el nombre de la sede');
+      } else if (error?.message?.includes('address')) {
+        setErrors({ address: 'Error con la dirección' });
+        toast.error('Error con la dirección');
+      } else {
+        toast.error('Ocurrió un error al guardar la sede. Verifique los datos e intente nuevamente.');
+      }
     }
   };
 

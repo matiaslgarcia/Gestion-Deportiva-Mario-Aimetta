@@ -53,7 +53,8 @@ function App() {
       toast.success('¡Grupo eliminado correctamente!');
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error eliminando grupo:', error);
+      // Error capturado al eliminar grupo
+      toast.error('Error al eliminar el grupo');
     }
   };
 
@@ -68,7 +69,8 @@ function App() {
       toast.success('¡Sede eliminada correctamente!');
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error eliminando sede:', error);
+      // Error capturado al eliminar sede
+      toast.error('Error al eliminar la sede');
     }
   };
 
@@ -83,7 +85,8 @@ function App() {
       toast.success('¡Alumno eliminado correctamente!');
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error eliminando alumno:', error);
+      // Error capturado al eliminar alumno
+      toast.error('Error al eliminar el alumno');
     }
   };
 
@@ -98,7 +101,8 @@ function App() {
       toast.success('¡Alumno habilitado correctamente!');
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error habilitando alumno:', error);
+      // Error capturado al habilitar alumno
+      toast.error('Error al habilitar el alumno');
     }
   };
 
@@ -143,9 +147,9 @@ function App() {
       setView('list');
       setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error dando de baja al alumno:', error);
-      toast.error('Error al dar de baja al alumno');
-    }
+        // Error capturado al dar de baja alumno
+        toast.error('Error al dar de baja al alumno');
+      }
   };
 
   const renderContent = () => {

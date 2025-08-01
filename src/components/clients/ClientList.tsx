@@ -85,8 +85,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       if (error) throw error;
       setClients((data as ExtendedClient[]) || []);
     } catch (error) {
-      console.error('Error fetching clients:', error);
-    } finally {
+        // Error silencioso al cargar clientes
+      } finally {
       setLoading(false);
     }
   };
@@ -97,8 +97,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       if (error) throw error;
       setLocations(data || []);
     } catch (error) {
-      console.error('Error fetching locations:', error);
-    }
+        // Error silencioso al cargar ubicaciones
+      }
   };
 
   const fetchGroups = async () => {
@@ -107,8 +107,8 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       if (error) throw error;
       setGroups(data || []);
     } catch (error) {
-      console.error('Error fetching groups:', error);
-    }
+        // Error silencioso al cargar grupos
+      }
   };
 
   const calculateAge = (birth_date: string) => {

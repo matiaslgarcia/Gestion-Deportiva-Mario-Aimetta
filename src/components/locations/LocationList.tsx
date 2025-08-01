@@ -39,8 +39,8 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
       if (error) throw error;
       setLocations(data || []);
     } catch (error) {
-      console.error('Error fetching locations:', error);
-    } finally {
+        // Error silencioso al cargar ubicaciones
+      } finally {
       setLoading(false);
     }
   };
