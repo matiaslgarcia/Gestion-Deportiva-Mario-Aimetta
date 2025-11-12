@@ -159,9 +159,10 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     }
     
     // Validación de DNI
-    if (!formData.dni.trim()) {
+    const dniDigits = formData.dni.trim().replace(/\D/g, '');
+    if (!dniDigits) {
       newErrors.dni = 'El DNI es obligatorio';
-    } else if (!/^\d{7,8}$/.test(formData.dni.trim())) {
+    } else if (!/^\d{7,8}$/.test(dniDigits)) {
       newErrors.dni = 'El DNI debe tener 7 u 8 dígitos numéricos';
     }
     
@@ -180,8 +181,11 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     // Validación de teléfono
     if (!formData.phone.trim()) {
       newErrors.phone = 'El teléfono es obligatorio';
-    } else if (!/^[\d\s\-\+\(\)]{8,15}$/.test(formData.phone.trim())) {
-      newErrors.phone = 'El teléfono debe tener entre 8 y 15 dígitos';
+    } else {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 8 || phoneDigits.length > 30) {
+        newErrors.phone = 'El teléfono debe contener entre 8 y 30 dígitos';
+      }
     }
     
     // Validación de dirección
@@ -201,7 +205,23 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
 
   const checkDniExists = async (dni: string, excludeId?: string): Promise<boolean> => {
     try {
-      let query = supabase.from('clients').select('id').eq('dni', dni);
+      const digits = dni.replace(/\D/g, '');
+      let dotted = '';
+      if (digits) {
+        if (digits.length <= 3) {
+          dotted = digits;
+        } else if (digits.length <= 6) {
+          dotted = `${digits.slice(0, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
+        } else {
+          dotted = `${digits.slice(0, digits.length - 6)}.${digits.slice(digits.length - 6, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
+        }
+      }
+      let query = supabase.from('clients').select('id');
+      if (dotted) {
+        query = query.or(`dni.eq.${digits},dni.eq.${dotted}`);
+      } else {
+        query = query.eq('dni', digits);
+      }
       
       if (excludeId) {
         query = query.neq('id', excludeId);
@@ -247,7 +267,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
           .update({
             name: formData.name,
             surname: formData.surname,
-            dni: formData.dni,
+            dni: formData.dni.replace(/\D/g, ''),
             phone: formData.phone,
             birth_date: formData.birth_date,
             payment_date: formData.payment_date,
@@ -288,18 +308,18 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
         // Inserta nuevo cliente
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
-          .insert([
-            {
-              name: formData.name,
-              surname: formData.surname,
-              dni: formData.dni,
-              phone: formData.phone,
-              birth_date: formData.birth_date,
-              payment_date: formData.payment_date,
-              method_of_payment: formData.method_of_payment,
-              direction: formData.direction
-            }
-          ])
+              .insert([
+                {
+                  name: formData.name,
+                  surname: formData.surname,
+                  dni: formData.dni.replace(/\D/g, ''),
+                  phone: formData.phone,
+                  birth_date: formData.birth_date,
+                  payment_date: formData.payment_date,
+                  method_of_payment: formData.method_of_payment,
+                  direction: formData.direction
+                }
+              ])
           .select()
           .single();
         if (clientError) throw clientError;
@@ -354,6 +374,14 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     }
   };
 
+  const formatDni = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
+    return `${digits.slice(0, digits.length - 6)}.${digits.slice(digits.length - 6, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
+  };
+
   if (loading) return <div className="p-4 text-center">Loading...</div>;
 
   return (
@@ -400,25 +428,26 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
             <input
               type="text"
               id="dni"
-              value={formData.dni}
-              onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
+              value={formatDni(formData.dni)}
+              onChange={(e) => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, '') })}
+              inputMode="numeric"
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Ingrese DNI (7 u 8 dígitos)"
+              placeholder="Ingrese DNI (xx.xxx.xxx o 7/8 dígitos)"
               required
             />
             {errors.dni && <p className="text-red-500 text-xs mt-1">{errors.dni}</p>}
           </div>
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Teléfono del Padre/Madre</label>
-            <input
-              type="text"
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Ej: +54 9 11 1234-5678 (8-15 dígitos)"
-              required
-            />
+          <input
+            type="text"
+            id="phone"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Ej: XXXXXXXXXX Fulano "
+            required
+          />
             {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
           </div>
           <div>
