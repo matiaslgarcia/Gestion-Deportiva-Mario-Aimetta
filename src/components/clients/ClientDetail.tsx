@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { addMonths, format, isValid, parse, parseISO } from 'date-fns';
 import { ChevronRight, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -32,7 +32,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
   const [client, setClient] = useState<ExtendedClient | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchClient = async () => {
+  const fetchClient = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.clients.get(clientId);
@@ -41,11 +41,11 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
       // Error silencioso al cargar cliente
     }
     setLoading(false);
-  };
+  }, [clientId]);
 
   useEffect(() => {
     fetchClient();
-  }, [clientId]);
+  }, [fetchClient]);
 
   // Actualiza solo el último pago realizado (sin modificar payment_status)
   const handleUpdatePayment = async () => {

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Location, Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
+import { calculateAge } from '../../utils/date';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
-import { parse } from 'date-fns';
 import { api, ClientWithRelations } from '../../lib/api';
 
 type ExtendedClient = ClientWithRelations;
@@ -40,13 +40,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchClients();
-    fetchLocations();
-    fetchGroups();
-  }, [isActive]);
-
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.clients.list(isActive);
@@ -56,18 +50,18 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       } finally {
       setLoading(false);
     }
-  };
+  }, [isActive]);
 
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     try {
       const data = await api.locations.list();
       setLocations(data || []);
     } catch {
         // Error silencioso al cargar ubicaciones
       }
-  };
+  }, []);
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await api.groups.list();
       setGroups(
@@ -85,17 +79,17 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
     } catch {
         // Error silencioso al cargar grupos
       }
-  };
+  }, []);
 
-  const calculateAge = (birth_date: string) => {
-    const birth = parse(birth_date, 'yyyy-MM-dd', new Date());
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
+  useEffect(() => {
+    fetchClients();
+    fetchLocations();
+    fetchGroups();
+  }, [fetchClients, fetchLocations, fetchGroups]);
+
+  const formatAge = (birthDate?: string | null) => {
+    const age = calculateAge(birthDate);
+    return age === null ? '-' : `${age} años`;
   };
 
   const mapPaymentStatus = (status: string) => {
@@ -269,7 +263,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-700">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {calculateAge(client.birth_date)} años
+                        {formatAge(client.birth_date)}
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-700">
@@ -394,7 +388,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-500 font-medium mb-1">🎂 Edad</p>
-                <p className="text-gray-900 font-semibold">{calculateAge(client.birth_date)} años</p>
+                <p className="text-gray-900 font-semibold">{formatAge(client.birth_date)}</p>
               </div>
               {client.direction && (
                 <div className="bg-gray-50 p-3 rounded-lg">

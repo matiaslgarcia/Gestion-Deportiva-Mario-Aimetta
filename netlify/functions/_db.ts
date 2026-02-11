@@ -1,6 +1,4 @@
 import { Pool } from 'pg';
-// @ts-ignore
-
 const dbPoolHolder = globalThis as unknown as { __dbPool?: Pool };
 
 export function getDbPool(): Pool {

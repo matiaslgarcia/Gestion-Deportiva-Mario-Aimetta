@@ -3,6 +3,7 @@ import { ChevronRight, Filter } from 'lucide-react';
 import { Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
+import { calculateAge } from '../../utils/date';
 import { Loader } from '../layout/Loader';
 import { api, ClientWithRelations } from '../../lib/api';
 
@@ -47,17 +48,6 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
 
     fetchAll();
   }, [groupId]);
-
-  const calculateAge = (birth_date: string) => {
-    const birth = new Date(birth_date);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   const getMappedPaymentStatus = (client: ClientWithRelations) => {
     const statusColor = getPaymentStatusColor(client.payment_date, client.last_payment) || 'red';
@@ -236,7 +226,7 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
                           <td className="px-6 py-4 text-sm text-gray-700">{client.dni}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{client.phone}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">{client.direction}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{calculateAge(client.birth_date)}</td>
+                          <td className="px-6 py-4 text-sm text-gray-700">{calculateAge(client.birth_date) ?? '-'}</td>
                           <td className="px-6 py-4 text-sm text-gray-700">
                             <PaymentStatusBadge
                               statusColor={getPaymentStatusColor(client.payment_date, client.last_payment) || 'red'}
@@ -268,7 +258,7 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
                   <h2 className="font-bold text-gray-900">{client.name} {client.surname}</h2>
                   <p className="text-gray-700"><strong>DNI:</strong> {client.dni}</p>
                   <p className="text-gray-700"><strong>Teléfono:</strong> {client.phone}</p>
-                  <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date)}</p>
+                  <p className="text-gray-700"><strong>Edad:</strong> {calculateAge(client.birth_date) ?? '-'}</p>
                   <p className="text-gray-700">
                     <strong>Estado de Pago:</strong>{' '}
                     <PaymentStatusBadge statusColor={getPaymentStatusColor(client.payment_date, client.last_payment)} />
