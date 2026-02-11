@@ -1,23 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Client, Location, Group } from '../../types';
+import { Location, Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
 import { parse } from 'date-fns';
+import { api, ClientWithRelations } from '../../lib/api';
 
-interface ExtendedClient extends Client {
-  client_locations?: {
-    location_id: string;
-    locations: { id: string; name: string }[];
-  }[];
-  client_groups?: {
-    group_id: string;
-    groups: { id: string; name: string }[];
-  }[];
-}
+type ExtendedClient = ClientWithRelations;
 
 interface ClientListProps {
   onView: (id: string) => void;
@@ -58,32 +49,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select(`
-          id,
-          name,
-          surname,
-          dni,
-          phone,
-          birth_date,
-          payment_date,
-          last_payment,
-          method_of_payment,
-          direction,
-          client_locations (
-            location_id,
-            locations ( id, name )
-          ),
-          client_groups (
-            group_id,
-            groups ( id, name )
-          )
-        `)
-        .eq('is_active', isActive);
-      if (error) throw error;
-      setClients((data as ExtendedClient[]) || []);
-    } catch (error) {
+      const data = await api.clients.list(isActive);
+      setClients(data || []);
+    } catch {
         // Error silencioso al cargar clientes
       } finally {
       setLoading(false);
@@ -92,20 +60,29 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
 
   const fetchLocations = async () => {
     try {
-      const { data, error } = await supabase.from('locations').select('*');
-      if (error) throw error;
+      const data = await api.locations.list();
       setLocations(data || []);
-    } catch (error) {
+    } catch {
         // Error silencioso al cargar ubicaciones
       }
   };
 
   const fetchGroups = async () => {
     try {
-      const { data, error } = await supabase.from('groups').select('*');
-      if (error) throw error;
-      setGroups(data || []);
-    } catch (error) {
+      const data = await api.groups.list();
+      setGroups(
+        (data || []).map((g) => ({
+          id: g.id,
+          name: g.name,
+          horario: g.horario,
+          day_of_week: g.day_of_week,
+          location_id: g.location_id,
+          min_age: g.min_age,
+          max_age: g.max_age,
+          locations: g.location
+        }))
+      );
+    } catch {
         // Error silencioso al cargar grupos
       }
   };
@@ -144,12 +121,10 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
       return false;
     }
     if (locationFilter) {
-      if (!client.client_locations || !client.client_locations.some(cl => cl.location_id === locationFilter))
-        return false;
+      if (!client.locations?.some((l) => l.id === locationFilter)) return false;
     }
     if (groupFilter) {
-      if (!client.client_groups || !client.client_groups.some(cg => cg.group_id === groupFilter))
-        return false;
+      if (!client.groups?.some((g) => g.id === groupFilter)) return false;
     }
     const realTimeStatus = getPaymentStatusColor(client.payment_date, client.last_payment);
     const status = mapPaymentStatus(realTimeStatus);
@@ -298,13 +273,13 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-700">
-                      {client.client_locations && client.client_locations.length > 0
-                        ? client.client_locations.map(cl => cl.locations?.name).join(', ')
+                      {client.locations && client.locations.length > 0
+                        ? client.locations.map(loc => loc.name).join(', ')
                         : '-'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-700">
-                      {client.client_groups && client.client_groups.length > 0
-                        ? client.client_groups.map(cg => cg.groups?.name).join(', ')
+                      {client.groups && client.groups.length > 0
+                        ? client.groups.map(g => g.name).join(', ')
                         : '-'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-900">
@@ -429,24 +404,24 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
               )}
             </div>
             
-            {(client.client_locations?.length > 0 || client.client_groups?.length > 0) && (
+            {(client.locations?.length > 0 || client.groups?.length > 0) && (
               <div className="space-y-2 mb-4">
-                {client.client_locations && client.client_locations.length > 0 && (
+                {client.locations && client.locations.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     <span className="text-xs text-gray-500 font-medium mr-2">🏢 Sedes:</span>
-                    {client.client_locations.map((cl, index) => (
+                    {client.locations.map((loc, index) => (
                       <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        {cl.locations?.name}
+                        {loc.name}
                       </span>
                     ))}
                   </div>
                 )}
-                {client.client_groups && client.client_groups.length > 0 && (
+                {client.groups && client.groups.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     <span className="text-xs text-gray-500 font-medium mr-2">👥 Grupos:</span>
-                    {client.client_groups.map((cg, index) => (
+                    {client.groups.map((g, index) => (
                       <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {cg.groups?.name}
+                        {g.name}
                       </span>
                     ))}
                   </div>
@@ -482,7 +457,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEnable(client.id);
+                    onEnable?.(client.id);
                   }}
                   className="flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-white hover:bg-green-600 rounded-lg transition-all duration-200 hover:shadow-md font-medium"
                 >

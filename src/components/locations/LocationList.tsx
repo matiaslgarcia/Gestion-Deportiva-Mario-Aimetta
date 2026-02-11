@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Location } from '../../types';
-import { supabase } from '../../lib/supabase';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
+import { api } from '../../lib/api';
 
 interface LocationListProps {
   onView: (id: string) => void;
@@ -18,7 +18,6 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
   // Filtros
   const [nameFilter, setNameFilter] = useState('');
   const [addressFilter, setAddressFilter] = useState('');
-  const [groupFilter, setGroupFilter] = useState('');
   // Estado para mostrar/ocultar filtros en mobile
   const [showFilters, setShowFilters] = useState(false);
 
@@ -35,10 +34,9 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
 
   const fetchLocations = async () => {
     try {
-      const { data, error } = await supabase.from('locations').select('*');
-      if (error) throw error;
+      const data = await api.locations.list();
       setLocations(data || []);
-    } catch (error) {
+    } catch {
         // Error silencioso al cargar ubicaciones
       } finally {
       setLoading(false);
@@ -72,7 +70,7 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [nameFilter, addressFilter, groupFilter]);
+  }, [nameFilter, addressFilter]);
 
   const totalPages = Math.ceil(filteredLocations.length / rowsPerPage);
   const paginatedLocations = filteredLocations.slice(

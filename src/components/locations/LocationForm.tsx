@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Location, Group } from '../../types';
+import { Location } from '../../types';
 import toast from 'react-hot-toast';
+import { api } from '../../lib/api';
 
 interface LocationFormProps {
   location?: Partial<Location>;
@@ -16,39 +16,19 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
     phone: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const { data, error } = await supabase.from('groups').select('*');
-        if (error) throw error;
-        setGroups(data || []);
-      } catch (error) {
-        // Error silencioso al cargar grupos
-      }
-    };
-
     const loadLocationData = async () => {
       if (location && location.id && !location.name) {
         try {
-          const { data, error } = await supabase
-            .from('locations')
-            .select('*')
-            .eq('id', location.id)
-            .single();
-          if (error) {
-            // Error silencioso al cargar ubicación
-          } else {
-            setFormData({
-              name: data.name || '',
-              address: data.address || '',
-              phone: data.phone || ''
-            });
-          }
-        } catch (error) {
+          const { location: data } = await api.locations.get(location.id, false);
+          setFormData({
+            name: data.name || '',
+            address: data.address || '',
+            phone: data.phone || ''
+          });
+        } catch {
           // Error silencioso al cargar datos de ubicación
         }
       } else if (location) {
@@ -60,7 +40,7 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
       }
     };
 
-    Promise.all([fetchGroups(), loadLocationData()]).finally(() => setLoading(false));
+    loadLocationData().finally(() => setLoading(false));
   }, [location]);
 
   const validate = () => {
@@ -78,32 +58,11 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
       newErrors.address = 'La dirección debe tener al menos 5 caracteres';
     }
     
-    if (formData.phone.trim() && !/^[\d\s\-\+\(\)]+$/.test(formData.phone.trim())) {
+    if (formData.phone.trim() && !/^[\d\s\-+()]+$/.test(formData.phone.trim())) {
       newErrors.phone = 'El formato del teléfono no es válido';
     }
     
     return newErrors;
-  };
-
-  const checkLocationExists = async (name: string, excludeId?: string) => {
-    try {
-      let query = supabase
-        .from('locations')
-        .select('id')
-        .ilike('name', name.trim());
-      
-      if (excludeId) {
-        query = query.neq('id', excludeId);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data && data.length > 0;
-    } catch (error) {
-       // Error silencioso al verificar existencia de ubicación
-       return false;
-     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,49 +74,35 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
       return;
     }
     
-    // Verificar si ya existe una sede con el mismo nombre
-    const locationExists = await checkLocationExists(formData.name, location?.id);
-    if (locationExists) {
-      setErrors({ name: 'Ya existe una sede con este nombre' });
-      toast.error('Ya existe una sede con este nombre');
-      return;
-    }
-    
     setErrors({});
     
     try {
       if (location && location.id) {
-        const { error } = await supabase
-          .from('locations')
-          .update(formData)
-          .eq('id', location.id);
-        
-        if (error) throw error;
+        await api.locations.update(location.id, formData);
         toast.success('Sede actualizada correctamente');
       } else {
-        const { data: newLocation, error } = await supabase
-          .from('locations')
-          .insert([formData])
-          .select()
-          .single();
-        
-        if (error) throw error;
+        await api.locations.create(formData);
         toast.success('Sede agregada correctamente');
       }
       onSave();
-    } catch (error: any) {
+    } catch (error: unknown) {
        // Error capturado al guardar ubicación
       
       // Manejo específico de errores
-      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
+      const message = (() => {
+        if (!error || typeof error !== 'object') return '';
+        if (!('message' in error)) return '';
+        const msg = (error as { message?: unknown }).message;
+        return typeof msg === 'string' ? msg : '';
+      })();
+
+      if (message.toLowerCase().includes('ya existe')) {
         setErrors({ name: 'Ya existe una sede con este nombre' });
         toast.error('Ya existe una sede con este nombre');
-      } else if (error?.code === '23503') {
-        toast.error('Error de referencia en la base de datos');
-      } else if (error?.message?.includes('name')) {
+      } else if (message.includes('name')) {
         setErrors({ name: 'Error con el nombre de la sede' });
         toast.error('Error con el nombre de la sede');
-      } else if (error?.message?.includes('address')) {
+      } else if (message.includes('address')) {
         setErrors({ address: 'Error con la dirección' });
         toast.error('Error con la dirección');
       } else {
@@ -220,27 +165,6 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
                 {errors.phone && <p className="text-red-500 text-xs mt-1 flex items-center"><span className="mr-1">⚠️</span>{errors.phone}</p>}
               </div>
         </div>
-            <div className="bg-gradient-to-r from-gray-50 to-purple-50 border border-gray-200 p-6 rounded-xl">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4">👥 Asignación de Grupos</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {groups.map(grp => (
-                  <div key={grp.id} className="flex items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-purple-300 transition-all duration-200">
-                    <input
-                      type="checkbox"
-                      id={`grp-${grp.id}`}
-                      checked={selectedGroupIds.includes(grp.id)}
-                      onChange={() => setSelectedGroupIds(prev =>
-                        prev.includes(grp.id) ? prev.filter(id => id !== grp.id) : [...prev, grp.id]
-                      )}
-                      className="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 hover:border-purple-500"
-                    />
-                    <label htmlFor={`grp-${grp.id}`} className="ml-3 text-sm font-medium text-gray-700">
-                      {grp.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
             <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
               <button
                 type="button"

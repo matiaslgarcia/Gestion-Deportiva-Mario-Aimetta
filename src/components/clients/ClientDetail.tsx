@@ -1,28 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { format, addMonths, parse } from 'date-fns';
+import { addMonths, format, isValid, parse, parseISO } from 'date-fns';
 import { ChevronRight, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
-import { Client } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { Loader } from '../layout/Loader';
+import { api, ClientWithRelations } from '../../lib/api';
 
-export interface ExtendedClient extends Omit<Client, 'location_ids' | 'group_ids'> {
-  client_locations?: {
-    location_id: string;
-    location: {
-      id: string;
-      name: string;
-    }[];
-  }[];
-  client_groups?: {
-    group_id: string;
-    group: {
-      id: string;
-      name: string;
-    }[];
-  }[];
+export type ExtendedClient = ClientWithRelations;
+
+function toValidDate(value: string): Date | null {
+  const parsed = value.includes('T') ? parseISO(value) : parse(value, 'yyyy-MM-dd', new Date());
+  return isValid(parsed) ? parsed : null;
+}
+
+function formatDate(value?: string, fallback = '-') {
+  if (!value) return fallback;
+  const date = toValidDate(value);
+  if (!date) return fallback;
+  return format(date, 'dd/MM/yyyy');
 }
 
 interface ClientDetailProps {
@@ -38,34 +34,11 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
 
   const fetchClient = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('clients')
-      .select(`
-        id,
-        name,
-        surname,
-        dni,
-        phone,
-        birth_date,
-        payment_date,
-        method_of_payment,
-        direction,
-        last_payment,
-        client_locations (
-          location_id,
-          location: locations ( id, name )
-        ),
-        client_groups (
-          group_id,
-          group: groups ( id, name )
-        )
-      `)
-      .eq('id', clientId)
-      .single();
-    if (error) {
-      // Error silencioso al cargar cliente
-    } else {
+    try {
+      const data = await api.clients.get(clientId);
       setClient(data);
+    } catch {
+      // Error silencioso al cargar cliente
     }
     setLoading(false);
   };
@@ -81,18 +54,11 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
       const now = new Date();
       const isoTime = now.toISOString();
   
-      const { error } = await supabase
-        .from('clients')
-        .update({ last_payment: isoTime })
-        .eq('id', clientId);
-      if (error) {
-        toast.error('Error actualizando el pago');
-      } else {
-        toast.success('¡Pago actualizado correctamente!');
-        setClient({ ...client, last_payment: isoTime });
-        fetchClient();
-      }
-    } catch (err) {
+      await api.clients.patch(clientId, { last_payment: isoTime });
+      toast.success('¡Pago actualizado correctamente!');
+      setClient({ ...client, last_payment: isoTime });
+      fetchClient();
+    } catch {
       // Error capturado al actualizar pago
       toast.error('Error actualizando el pago');
     }
@@ -109,18 +75,10 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
     
     if (window.confirm('¿Estás seguro de que deseas dar de baja a este alumno?')) {
       try {
-        const { error } = await supabase
-          .from('clients')
-          .delete()
-          .eq('id', clientId);
-        
-        if (error) {
-          toast.error('Error al dar de baja al alumno');
-        } else {
-          toast.success('Alumno dado de baja correctamente');
-          onDelete(clientId);
-        }
-      } catch (err) {
+        await api.clients.patch(clientId, { is_active: false });
+        toast.success('Alumno dado de baja correctamente');
+        onDelete(clientId);
+      } catch {
         // Error capturado al dar de baja alumno
         toast.error('Error al dar de baja al alumno');
       }
@@ -189,9 +147,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Fecha de Nacimiento</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.birth_date
-                    ? format(parse(client.birth_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
-                    : '-'}
+                  {formatDate(client.birth_date)}
                 </dd>
               </div>
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-3">
@@ -215,25 +171,25 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Fecha de Pago</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.payment_date
-                    ? format(parse(client.payment_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
-                    : '-'}
+                  {formatDate(client.payment_date)}
                 </dd>
               </div>
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Próximo Pago</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.last_payment
-                    ? format(addMonths(parse(client.last_payment, 'yyyy-MM-dd', new Date()), 1), 'dd/MM/yyyy')
-                    : client.payment_date
-                    ? format(parse(client.payment_date, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy')
-                    : '-'}
+                  {(() => {
+                    const base = client.last_payment ?? client.payment_date;
+                    if (!base) return '-';
+                    const baseDate = toValidDate(base);
+                    if (!baseDate) return '-';
+                    return format(addMonths(baseDate, 1), 'dd/MM/yyyy');
+                  })()}
                 </dd>
               </div>
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Último Pago</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.last_payment ? format(parse(client.last_payment, 'yyyy-MM-dd', new Date()), 'dd/MM/yyyy') : '-'}
+                  {formatDate(client.last_payment)}
                 </dd>
               </div>
             </div>
@@ -249,16 +205,16 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Sede(s)</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.client_locations && client.client_locations.length > 0
-                    ? client.client_locations.map(cl => cl.location?.name).join(', ')
+                  {client.locations && client.locations.length > 0
+                    ? client.locations.map((l) => l.name).join(', ')
                     : '-'}
                 </dd>
               </div>
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Grupo(s)</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {client.client_groups && client.client_groups.length > 0
-                    ? client.client_groups.map(cg => cg.group?.name).join(', ')
+                  {client.groups && client.groups.length > 0
+                    ? client.groups.map((g) => g.name).join(', ')
                     : '-'}
                 </dd>
               </div>

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Group, Location } from '../../types';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
+import { api, GroupWithMeta } from '../../lib/api';
 
 interface GroupListProps {
   onView: (id: string) => void;
@@ -13,9 +13,8 @@ interface GroupListProps {
 }
 
 export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<(Group & { client_count?: number })[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [clientGroups, setClientGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filtros
@@ -34,17 +33,25 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
   useEffect(() => {
     fetchGroups();
     fetchLocations();
-    fetchClientGroups();
   }, []);
 
   const fetchGroups = async () => {
     try {
-      const { data, error } = await supabase
-        .from('groups')
-        .select('*, locations:location_id (id, name)');
-      if (error) throw error;
-      setGroups(data || []);
-    } catch (error) {
+      const data = await api.groups.list();
+      setGroups(
+        (data || []).map((g: GroupWithMeta) => ({
+          id: g.id,
+          name: g.name,
+          horario: g.horario,
+          day_of_week: g.day_of_week,
+          location_id: g.location_id,
+          min_age: g.min_age,
+          max_age: g.max_age,
+          locations: g.location,
+          client_count: g.client_count
+        }))
+      );
+    } catch {
         // Error silencioso al cargar grupos
       } finally {
       setLoading(false);
@@ -53,30 +60,12 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
 
   const fetchLocations = async () => {
     try {
-      const { data, error } = await supabase.from('locations').select('*');
-      if (error) throw error;
+      const data = await api.locations.list();
       setLocations(data || []);
-    } catch (error) {
+    } catch {
         // Error silencioso al cargar ubicaciones
       }
   };
-
-  const fetchClientGroups = async () => {
-    try {
-      const { data, error } = await supabase.from('client_groups').select('*');
-      if (error) throw error;
-      setClientGroups(data || []);
-    } catch (error) {
-      console.error('Error fetching client_groups:', error);
-    }
-  };
-
-  const clientCountMap = clientGroups.reduce((acc: Record<string, number>, cg) => {
-    if (cg.group_id) {
-      acc[cg.group_id] = (acc[cg.group_id] || 0) + 1;
-    }
-    return acc;
-  }, {});
 
   const filteredGroups = groups.filter((group) => {
     if (nameFilter && group.name !== nameFilter) return false;
@@ -199,7 +188,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-700">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {clientCountMap[group.id] || 0} alumnos
+                        {group.client_count || 0} alumnos
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-gray-900">
@@ -297,7 +286,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
                 <p className="text-xs text-gray-500 font-medium mb-1">👤 Alumnos</p>
                 <div className="flex items-center space-x-2">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {clientCountMap[group.id] || 0} alumnos
+                    {group.client_count || 0} alumnos
                   </span>
                 </div>
               </div>

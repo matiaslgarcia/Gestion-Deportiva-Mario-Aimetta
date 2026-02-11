@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Client } from '../../types';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
-import { Users, CheckCircle, AlertCircle, Clock, Search, ChevronLeft, ChevronRight, Eye, TrendingUp, Activity } from 'lucide-react';
+import { Users, CheckCircle, AlertCircle, Clock, Search, ChevronRight, Eye, TrendingUp, Activity } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
-import { format, addDays, isAfter, isBefore } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { format} from 'date-fns';
+import { api } from '../../lib/api';
 
 interface DashboardMetrics {
   totalActiveClients: number;
@@ -37,8 +36,6 @@ export function Dashboard({ onClientClick }: DashboardProps) {
   
   // Estados para navegación y búsqueda
   const [searchTerm, setSearchTerm] = useState('');
-  const [overdueCurrentPage, setOverdueCurrentPage] = useState(1);
-  const [dueSoonCurrentPage, setDueSoonCurrentPage] = useState(1);
   const [showAllOverdue, setShowAllOverdue] = useState(false);
   const [showAllDueSoon, setShowAllDueSoon] = useState(false);
   const [showAllUpToDate, setShowAllUpToDate] = useState(false);
@@ -53,19 +50,28 @@ export function Dashboard({ onClientClick }: DashboardProps) {
       setLoading(true);
       
       // Obtener todos los clientes activos
-      const { data: clients, error } = await supabase
-        .from('clients')
-        .select('*')
-        .not('payment_date', 'is', null);
+      const clients = await api.dashboard.getClients();
 
-      if (error) throw error;
-
-      const clientsWithStatus: ClientWithPaymentStatus[] = (clients || []).map(client => {
+      const clientsWithStatus: ClientWithPaymentStatus[] = (clients || []).map((client) => {
         const paymentStatus = getPaymentStatusColor(client.payment_date, client.last_payment);
-        return {
-          ...client,
-          paymentStatus
+        const normalizedClient: Client = {
+          id: client.id,
+          name: client.name,
+          surname: client.surname,
+          dni: client.dni,
+          phone: client.phone,
+          birth_date: client.birth_date,
+          payment_date: client.payment_date,
+          last_payment: client.last_payment,
+          method_of_payment: client.method_of_payment,
+          payment_status: client.payment_status,
+          direction: client.direction,
+          location_ids: client.location_ids ?? [],
+          group_ids: client.group_ids ?? [],
+          created_at: client.created_at,
+          updated_at: client.updated_at
         };
+        return { ...normalizedClient, paymentStatus };
       });
 
       // Calcular métricas
@@ -86,7 +92,7 @@ export function Dashboard({ onClientClick }: DashboardProps) {
       setDueSoonClients(clientsWithStatus.filter(c => c.paymentStatus === 'yellow'));
       setUpToDateClients(clientsWithStatus.filter(c => c.paymentStatus === 'green'));
 
-    } catch (error) {
+    } catch {
       // Error silencioso al cargar datos del dashboard
     } finally {
       setLoading(false);

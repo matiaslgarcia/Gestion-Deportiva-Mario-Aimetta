@@ -13,7 +13,7 @@ import { GroupDetail } from './components/groups/GroupDetail';
 import { GroupForm } from './components/groups/GroupForm';
 import { PageHeader } from './components/shared/PageHeader';
 import { Breadcrumbs } from './components/shared/Breadcrumbs';
-import { supabase } from './lib/supabase';
+import { api } from './lib/api';
 
 type View = 'list' | 'detail' | 'form';
 
@@ -22,7 +22,6 @@ function App() {
   const [view, setView] = useState<View>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Inicializar tema
   useEffect(() => {
@@ -64,14 +63,10 @@ function App() {
   // Handler para eliminar grupos
   const handleDeleteGroup = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('groups')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await api.groups.delete(id);
       toast.success('¡Grupo eliminado correctamente!');
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch {
       // Error capturado al eliminar grupo
       toast.error('Error al eliminar el grupo');
     }
@@ -80,14 +75,10 @@ function App() {
   // Handler para eliminar sedes (locations)
   const handleDeleteLocation = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('locations')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await api.locations.delete(id);
       toast.success('¡Sede eliminada correctamente!');
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch {
       // Error capturado al eliminar sede
       toast.error('Error al eliminar la sede');
     }
@@ -96,14 +87,10 @@ function App() {
   // Handler para eliminar clientes (eliminación lógica)
   const handleDeleteClient = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ is_active: false })
-        .eq('id', id);
-      if (error) throw error;
+      await api.clients.patch(id, { is_active: false });
       toast.success('¡Alumno eliminado correctamente!');
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch {
       // Error capturado al eliminar alumno
       toast.error('Error al eliminar el alumno');
     }
@@ -112,14 +99,10 @@ function App() {
   // Handler para habilitar clientes inactivos
   const handleEnableClient = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ is_active: true })
-        .eq('id', id);
-      if (error) throw error;
+      await api.clients.patch(id, { is_active: true });
       toast.success('¡Alumno habilitado correctamente!');
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch {
       // Error capturado al habilitar alumno
       toast.error('Error al habilitar el alumno');
     }
@@ -150,22 +133,18 @@ function App() {
     setView('form');
   };
 
-  const handleClientEdit = (client: any) => {
+  const handleClientEdit = (client: { id: string }) => {
     setSelectedId(client.id);
     setView('form');
   };
 
   const handleClientDelete = async (clientId: string) => {
     try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ is_active: false })
-        .eq('id', clientId);
-      if (error) throw error;
+      await api.clients.patch(clientId, { is_active: false });
       toast.success('¡Alumno dado de baja correctamente!');
       setView('list');
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch {
         // Error capturado al dar de baja alumno
         toast.error('Error al dar de baja al alumno');
       }

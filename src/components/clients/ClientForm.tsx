@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Client, Location, Group } from '../../types';
 import toast from 'react-hot-toast';
+import { api } from '../../lib/api';
 
 interface ClientFormProps {
   client?: Partial<Client>;
@@ -33,7 +33,7 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
       try {
 
         await Promise.all([fetchLocations(), fetchGroups()]);
-      } catch (error) {
+      } catch {
          // Error silencioso durante la inicialización
          toast.error('Error al inicializar el formulario');
       } finally {
@@ -42,25 +42,24 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     };
 
     const fetchLocations = async () => {
-      try {
-        const { data, error } = await supabase.from('locations').select('*');
-        if (error) throw error;
-        setLocations(data || []);
-      } catch (error) {
-         // Error silencioso al cargar ubicaciones
-         throw error;
-      }
+      const data = await api.locations.list();
+      setLocations(data || []);
     };
 
     const fetchGroups = async () => {
-      try {
-        const { data, error } = await supabase.from('groups').select('*');
-        if (error) throw error;
-        setGroups(data || []);
-      } catch (error) {
-         // Error silencioso al cargar grupos
-         throw error;
-      }
+      const data = await api.groups.list();
+      setGroups(
+        (data || []).map((g) => ({
+          id: g.id,
+          name: g.name,
+          horario: g.horario,
+          day_of_week: g.day_of_week,
+          location_id: g.location_id,
+          min_age: g.min_age,
+          max_age: g.max_age,
+          locations: g.location
+        }))
+      );
     };
 
     initializeComponent();
@@ -69,30 +68,25 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
   useEffect(() => {
     const fetchClientData = async () => {
       if (client && client.id && !client.name) {
-        const { data, error } = await supabase
-          .from('clients')
-          .select(`
-            *,
-            client_locations (
-              location_id
-            ),
-            client_groups (
-              group_id
-            )
-          `)
-          .eq('id', client.id)
-          .single();
-        
-        if (error) {
-        } else {
-          const locationIds = data.client_locations?.map((cl: { location_id: string }) => cl.location_id) || [];
-          const groupIds = data.client_groups?.map((cg: { group_id: string }) => cg.group_id) || [];
-          
+        try {
+          const data = await api.clients.get(client.id);
           updateFormData({
-            ...data,
-            location_ids: locationIds,
-            group_ids: groupIds
+            id: data.id,
+            name: data.name,
+            surname: data.surname,
+            dni: data.dni,
+            phone: data.phone,
+            birth_date: data.birth_date,
+            payment_date: data.payment_date,
+            last_payment: data.last_payment,
+            method_of_payment: data.method_of_payment,
+            payment_status: data.payment_status,
+            direction: data.direction,
+            location_ids: data.location_ids ?? [],
+            group_ids: data.group_ids ?? []
           });
+        } catch {
+          toast.error('Error al cargar el alumno');
         }
       } else if (client) {
         updateFormData(client);
@@ -203,44 +197,6 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     return newErrors;
   };
 
-  const checkDniExists = async (dni: string, excludeId?: string): Promise<boolean> => {
-    try {
-      const digits = dni.replace(/\D/g, '');
-      let dotted = '';
-      if (digits) {
-        if (digits.length <= 3) {
-          dotted = digits;
-        } else if (digits.length <= 6) {
-          dotted = `${digits.slice(0, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
-        } else {
-          dotted = `${digits.slice(0, digits.length - 6)}.${digits.slice(digits.length - 6, digits.length - 3)}.${digits.slice(digits.length - 3)}`;
-        }
-      }
-      let query = supabase.from('clients').select('id');
-      if (dotted) {
-        query = query.or(`dni.eq.${digits},dni.eq.${dotted}`);
-      } else {
-        query = query.eq('dni', digits);
-      }
-      
-      if (excludeId) {
-        query = query.neq('id', excludeId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        // Error silencioso al verificar DNI
-        return false;
-      }
-      
-      return data && data.length > 0;
-    } catch (error) {
-      // Error silencioso al verificar DNI
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate();
@@ -251,121 +207,58 @@ export function ClientForm({ client, onSave, onCancel }: ClientFormProps) {
     }
     setErrors({}); // Limpiar errores
     
-    // Verificar si el DNI ya existe
-    const dniExists = await checkDniExists(formData.dni, client?.id);
-    if (dniExists) {
-      setErrors({ dni: 'Ya existe un cliente con este DNI' });
-      toast.error('Ya existe un cliente con este DNI. Por favor, verifica el número de documento.');
-      return;
-    }
-    
     try {
       if (client && client.id) {
-        // Actualiza registro del cliente
-        await supabase
-          .from('clients')
-          .update({
-            name: formData.name,
-            surname: formData.surname,
-            dni: formData.dni.replace(/\D/g, ''),
-            phone: formData.phone,
-            birth_date: formData.birth_date,
-            payment_date: formData.payment_date,
-            method_of_payment: formData.method_of_payment,
-            direction: formData.direction
-          })
-          .eq('id', client.id);
-
-        // Actualiza client_locations
-        await supabase
-          .from('client_locations')
-          .delete()
-          .eq('client_id', client.id);
-
-        if (formData.location_ids.length > 0) {
-          const clientLocations = formData.location_ids.map(locationId => ({
-            client_id: client.id,
-            location_id: locationId
-          }));
-          await supabase.from('client_locations').insert(clientLocations);
-        }
-
-        // Actualiza client_groups
-        await supabase
-          .from('client_groups')
-          .delete()
-          .eq('client_id', client.id);
-
-        if (formData.group_ids.length > 0) {
-          const clientGroups = formData.group_ids.map(groupId => ({
-            client_id: client.id,
-            group_id: groupId
-          }));
-          await supabase.from('client_groups').insert(clientGroups);
-        }
+        await api.clients.update(client.id, {
+          name: formData.name,
+          surname: formData.surname,
+          dni: formData.dni.replace(/\D/g, ''),
+          phone: formData.phone,
+          birth_date: formData.birth_date,
+          payment_date: formData.payment_date,
+          method_of_payment: formData.method_of_payment as 'efectivo' | 'transferencia',
+          direction: formData.direction,
+          location_ids: formData.location_ids,
+          group_ids: formData.group_ids
+        });
         toast.success('Cliente actualizado correctamente');
       } else {
-        // Inserta nuevo cliente
-        const { data: newClient, error: clientError } = await supabase
-          .from('clients')
-              .insert([
-                {
-                  name: formData.name,
-                  surname: formData.surname,
-                  dni: formData.dni.replace(/\D/g, ''),
-                  phone: formData.phone,
-                  birth_date: formData.birth_date,
-                  payment_date: formData.payment_date,
-                  method_of_payment: formData.method_of_payment,
-                  direction: formData.direction
-                }
-              ])
-          .select()
-          .single();
-        if (clientError) throw clientError;
-
-        if (newClient) {
-          if (formData.location_ids.length > 0) {
-            const clientLocations = formData.location_ids.map(locationId => ({
-              client_id: newClient.id,
-              location_id: locationId
-            }));
-            await supabase.from('client_locations').insert(clientLocations);
-          }
-          if (formData.group_ids.length > 0) {
-            const clientGroups = formData.group_ids.map(groupId => ({
-              client_id: newClient.id,
-              group_id: groupId
-            }));
-            await supabase.from('client_groups').insert(clientGroups);
-          }
-          toast.success('Cliente agregado correctamente');
-        }
+        await api.clients.create({
+          name: formData.name,
+          surname: formData.surname,
+          dni: formData.dni.replace(/\D/g, ''),
+          phone: formData.phone,
+          birth_date: formData.birth_date,
+          payment_date: formData.payment_date,
+          method_of_payment: formData.method_of_payment as 'efectivo' | 'transferencia',
+          direction: formData.direction,
+          location_ids: formData.location_ids,
+          group_ids: formData.group_ids
+        });
+        toast.success('Cliente agregado correctamente');
       }
       onSave();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error capturado al guardar cliente
       
       // Manejo específico de errores
-      if (error?.status === 409 || error?.statusCode === 409 || 
-          error?.code === '23505' ||
-          error?.message?.toLowerCase().includes('duplicate') ||
-          error?.message?.toLowerCase().includes('unique') ||
-          error?.message?.toLowerCase().includes('dni')) {
+      const message = (() => {
+        if (!error || typeof error !== 'object') return '';
+        if (!('message' in error)) return '';
+        const msg = (error as { message?: unknown }).message;
+        return typeof msg === 'string' ? msg : '';
+      })();
+
+      if (message.toLowerCase().includes('dni')) {
         setErrors({ dni: 'Ya existe un cliente con este DNI. Por favor, verifica el número de documento.' });
         toast.error('Ya existe un cliente con este DNI. Por favor, verifica el número de documento.');
-      } else if (error?.code === '23503') {
-        toast.error('Error de referencia en la base de datos. Verifique que los grupos seleccionados sean válidos.');
-      } else if (error?.message?.includes('name')) {
+      } else if (message.includes('name')) {
         setErrors({ name: 'Error con el nombre del cliente' });
         toast.error('Error con el nombre del cliente');
-      } else if (error?.message?.includes('phone')) {
+      } else if (message.includes('phone')) {
         setErrors({ phone: 'Error con el número de teléfono' });
         toast.error('Error con el número de teléfono');
-      } else if (error?.message?.includes('email')) {
-        setErrors({ email: 'Error con el email' });
-        toast.error('Error con el email');
-      } else if (error?.message?.includes('birth_date')) {
+      } else if (message.includes('birth_date')) {
         setErrors({ birth_date: 'Error con la fecha de nacimiento' });
         toast.error('Error con la fecha de nacimiento');
       } else {

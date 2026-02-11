@@ -48,7 +48,7 @@ export function ThemeToggle() {
     
     // Forzar repaint del navegador
     html.style.display = 'none';
-    html.offsetHeight; // Trigger reflow
+    void html.offsetHeight;
     html.style.display = '';
     
     // Log after a short delay to ensure changes are applied

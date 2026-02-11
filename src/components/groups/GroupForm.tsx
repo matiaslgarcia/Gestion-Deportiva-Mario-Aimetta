@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Group, Location } from '../../types';
 import toast from 'react-hot-toast';
+import { api } from '../../lib/api';
 
 interface GroupFormProps {
   group?: Partial<Group>;
@@ -23,10 +23,9 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const { data, error } = await supabase.from('locations').select('*');
-        if (error) throw error;
+        const data = await api.locations.list();
         setLocations(data || []);
-      } catch (error) {
+      } catch {
         // Error silencioso al cargar ubicaciones
       } finally {
         setLoading(false);
@@ -36,22 +35,14 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
     const loadGroupData = async () => {
       if (group && group.id && !group.name) {
         try {
-          const { data, error } = await supabase
-            .from('groups')
-            .select('*')
-            .eq('id', group.id)
-            .single();
-          if (error) {
-            // Error silencioso al cargar grupo
-          } else {
-            setFormData({
-              name: data.name || '',
-              horario: data.horario || '',
-              day_of_week: data.day_of_week || '',
-              location_id: data.location_id || ''
-            });
-          }
-        } catch (error) {
+          const { group: data } = await api.groups.get(group.id, false);
+          setFormData({
+            name: data.name || '',
+            horario: data.horario || '',
+            day_of_week: data.day_of_week || '',
+            location_id: data.location_id || ''
+          });
+        } catch {
           // Error silencioso al cargar datos del grupo
         }
       } else if (group) {
@@ -94,27 +85,6 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
     return newErrors;
   };
 
-  const checkGroupExists = async (name: string, excludeId?: string) => {
-    try {
-      let query = supabase
-        .from('groups')
-        .select('id')
-        .ilike('name', name.trim());
-      
-      if (excludeId) {
-        query = query.neq('id', excludeId);
-      }
-      
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data && data.length > 0;
-    } catch (error) {
-       // Error silencioso al verificar existencia del grupo
-       return false;
-     }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validationErrors = validate();
@@ -124,45 +94,32 @@ export function GroupForm({ group, onSave, onCancel }: GroupFormProps) {
       return;
     }
     
-    // Verificar si ya existe un grupo con el mismo nombre
-    const groupExists = await checkGroupExists(formData.name, group?.id);
-    if (groupExists) {
-      setErrors({ name: 'Ya existe un grupo con este nombre' });
-      toast.error('Ya existe un grupo con este nombre');
-      return;
-    }
-    
     setErrors({});
     
     try {
       if (group && group.id) {
-        const { error } = await supabase
-          .from('groups')
-          .update(formData)
-          .eq('id', group.id);
-        
-        if (error) throw error;
+        await api.groups.update(group.id, formData);
         toast.success('Grupo actualizado correctamente');
       } else {
-        const { error } = await supabase
-          .from('groups')
-          .insert([formData]);
-        
-        if (error) throw error;
+        await api.groups.create(formData);
         toast.success('Grupo agregado correctamente');
       }
       onSave();
-    } catch (error: any) {
+    } catch (error: unknown) {
        // Error capturado al guardar grupo
       
       // Manejo específico de errores
-      if (error?.code === '23505' || error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
+      const message = (() => {
+        if (!error || typeof error !== 'object') return '';
+        if (!('message' in error)) return '';
+        const msg = (error as { message?: unknown }).message;
+        return typeof msg === 'string' ? msg : '';
+      })();
+
+      if (message.toLowerCase().includes('ya existe')) {
         setErrors({ name: 'Ya existe un grupo con este nombre' });
         toast.error('Ya existe un grupo con este nombre');
-      } else if (error?.code === '23503') {
-        setErrors({ location_id: 'La sede seleccionada no es válida' });
-        toast.error('La sede seleccionada no es válida');
-      } else if (error?.message?.includes('location_id')) {
+      } else if (message.includes('location_id')) {
         setErrors({ location_id: 'Error con la sede seleccionada' });
         toast.error('Error con la sede seleccionada');
       } else {

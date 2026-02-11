@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight, Filter } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { Loader } from '../layout/Loader';
+import { api, ClientWithRelations } from '../../lib/api';
 
 interface GroupDetailProps {
   groupId: string;
@@ -14,7 +14,7 @@ interface GroupDetailProps {
 
 export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps) {
   const [group, setGroup] = useState<Group | null>(null);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [dniFilter, setDniFilter] = useState('');
   const [nameFilter, setNameFilter] = useState('');
@@ -24,65 +24,28 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
   const rowsPerPage = 10;
 
   useEffect(() => {
-    const fetchGroup = async () => {
+    const fetchAll = async () => {
       try {
-        const { data, error } = await supabase
-          .from('groups')
-          .select(`
-            *,
-            locations (
-              id,
-              name
-            )
-          `)
-          .eq('id', groupId)
-          .single();
-        if (error) throw error;
-        setGroup(data);
-      } catch (error) {
+        const data = await api.groups.get(groupId, true);
+        setGroup({
+          id: data.group.id,
+          name: data.group.name,
+          horario: data.group.horario,
+          day_of_week: data.group.day_of_week,
+          location_id: data.group.location_id,
+          min_age: data.group.min_age,
+          max_age: data.group.max_age,
+          locations: data.group.location
+        });
+        setClients(data.clients || []);
+      } catch {
         // Error silencioso al cargar grupo
-      }
-    };
-
-    const fetchClients = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select(`
-            id,
-            name,
-            surname,
-            dni,
-            phone,
-            birth_date,
-            payment_date,
-            last_payment,
-            method_of_payment,
-            payment_status,
-            direction,
-            client_groups (
-              group_id,
-              groups (
-                id,
-                name
-              )
-            )
-          `)
-          .eq('is_active', true);
-        if (error) throw error;
-        const groupClients = (data || []).filter((client: any) =>
-          client.client_groups && client.client_groups.some((cg: any) => cg.group_id === groupId)
-        );
-        setClients(groupClients);
-      } catch (error) {
-        // Error silencioso al cargar clientes del grupo
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGroup();
-    fetchClients();
+    fetchAll();
   }, [groupId]);
 
   const calculateAge = (birth_date: string) => {
@@ -96,7 +59,7 @@ export function GroupDetail({ groupId, onBack, onClientClick }: GroupDetailProps
     return age;
   };
 
-  const getMappedPaymentStatus = (client: any) => {
+  const getMappedPaymentStatus = (client: ClientWithRelations) => {
     const statusColor = getPaymentStatusColor(client.payment_date, client.last_payment) || 'red';
     return statusColor === 'green'
       ? 'pagado'

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { Location } from '../../types';
 import { Loader } from '../layout/Loader';
+import { api, LocationGroupRow } from '../../lib/api';
 
 interface LocationDetailProps {
   locationId: string;
@@ -12,39 +12,23 @@ interface LocationDetailProps {
 
 export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDetailProps) {
   const [location, setLocation] = useState<Location | null>(null);
-  const [groups, setGroups] = useState<any[]>([]);
+  const [groups, setGroups] = useState<LocationGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLocation = async () => {
-      const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('id', locationId)
-        .single();
-      if (error) {
-        // Error silencioso al cargar ubicación
-      }
-      else setLocation(data);
-    };
-
-    const fetchGroups = async () => {
+    const fetchAll = async () => {
       try {
-        const { data, error } = await supabase
-          .from('groups')
-          .select('*')
-          .eq('location_id', locationId);
-        if (error) throw error;
-        setGroups(data || []);
-      } catch (error) {
-        // Error silencioso al cargar grupos
+        const data = await api.locations.get(locationId, true);
+        setLocation(data.location);
+        setGroups(data.groups || []);
+      } catch {
+        // Error silencioso al cargar sede
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLocation();
-    fetchGroups();
+    fetchAll();
   }, [locationId]);
 
   if (loading)
@@ -131,11 +115,11 @@ export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDet
                               {group.name}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {group.schedule}
+                              {group.horario}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {group.student_count || 0} alumnos
+                                {group.client_count || 0} alumnos
                               </span>
                             </td>
                           </tr>
@@ -155,12 +139,11 @@ export function LocationDetail({ locationId, onBack, onGroupClick }: LocationDet
                     >
                       <div className="flex justify-between items-start mb-3">
                         <h4 className="font-semibold text-gray-900 text-lg">{group.name}</h4>
-                        <span className="text-lg font-bold text-emerald-600">${group.price}</span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3">{group.schedule}</p>
+                      <p className="text-sm text-gray-600 mb-3">{group.horario}</p>
                       <div className="flex justify-between items-center">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {group.student_count || 0} alumnos
+                          {group.client_count || 0} alumnos
                         </span>
                         <div className="text-emerald-600">
                           <ChevronRight className="h-5 w-5" />
