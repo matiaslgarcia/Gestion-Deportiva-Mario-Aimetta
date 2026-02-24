@@ -1,25 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { addMonths, format, isValid, parse, parseISO } from 'date-fns';
 import { ChevronRight, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
+import { formatDate, getNextPaymentDateString } from '../../utils/date';
 import { Loader } from '../layout/Loader';
 import { api, ClientWithRelations } from '../../lib/api';
 
 export type ExtendedClient = ClientWithRelations;
-
-function toValidDate(value: string): Date | null {
-  const parsed = value.includes('T') ? parseISO(value) : parse(value, 'yyyy-MM-dd', new Date());
-  return isValid(parsed) ? parsed : null;
-}
-
-function formatDate(value?: string, fallback = '-') {
-  if (!value) return fallback;
-  const date = toValidDate(value);
-  if (!date) return fallback;
-  return format(date, 'dd/MM/yyyy');
-}
 
 interface ClientDetailProps {
   clientId: string;
@@ -177,13 +165,7 @@ export function ClientDetail({ clientId, onBack, onEdit, onDelete }: ClientDetai
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
                 <dt className="text-sm font-medium text-gray-500 mb-1">Próximo Pago</dt>
                 <dd className="text-lg font-semibold text-gray-900">
-                  {(() => {
-                    const base = client.last_payment ?? client.payment_date;
-                    if (!base) return '-';
-                    const baseDate = toValidDate(base);
-                    if (!baseDate) return '-';
-                    return format(addMonths(baseDate, 1), 'dd/MM/yyyy');
-                  })()}
+                  {getNextPaymentDateString(client.last_payment ?? client.payment_date)}
                 </dd>
               </div>
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">

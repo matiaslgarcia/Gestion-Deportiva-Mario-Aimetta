@@ -84,7 +84,7 @@ export const handler: Handler = async (event) => {
   }
 
   if (event.httpMethod === 'POST') {
-    const body = parseJsonBody<GroupPayload>(event.body);
+    const body = parseJsonBody<GroupPayload>(event.body ?? undefined);
     if (!body) return badRequest('Body inválido');
 
     const exists = await pool.query(
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
 
   if (event.httpMethod === 'PUT') {
     if (!id) return badRequest('Falta query param: id');
-    const body = parseJsonBody<GroupPayload>(event.body);
+    const body = parseJsonBody<GroupPayload>(event.body ?? undefined);
     if (!body) return badRequest('Body inválido');
 
     const exists = await pool.query(

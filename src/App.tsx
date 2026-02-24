@@ -35,27 +35,22 @@ function App() {
   }, []);
 
   const handleTabChange = (tab: 'dashboard' | 'locations' | 'clients' | 'groups' | 'clients-inactive') => {
-    console.log('handleTabChange called with:', tab);
     setActiveTab(tab);
     setView('list');
     setSelectedId(null);
   };
 
   const handleAdd = () => {
-    console.log('handleAdd called - activeTab:', activeTab, 'current view:', view);
     setSelectedId(null);
     setView('form');
-    console.log('handleAdd completed - new view should be: form');
   };
 
   const handleBack = () => {
-    console.log('handleBack called');
     setView('list');
     setSelectedId(null);
   };
 
   const handleSave = async () => {
-    console.log('handleSave called');
     setView('list');
     setRefreshKey(prev => prev + 1);
   };
@@ -69,18 +64,6 @@ function App() {
     } catch {
       // Error capturado al eliminar grupo
       toast.error('Error al eliminar el grupo');
-    }
-  };
-
-  // Handler para eliminar sedes (locations)
-  const handleDeleteLocation = async (id: string) => {
-    try {
-      await api.locations.delete(id);
-      toast.success('¡Sede eliminada correctamente!');
-      setRefreshKey(prev => prev + 1);
-    } catch {
-      // Error capturado al eliminar sede
-      toast.error('Error al eliminar la sede');
     }
   };
 
@@ -151,7 +134,6 @@ function App() {
   };
 
   const renderContent = () => {
-    console.log('renderContent called - activeTab:', activeTab, 'view:', view, 'selectedId:', selectedId);
     if (activeTab === 'dashboard') {
       return <Dashboard onClientClick={handleClientClick} />;
     } else if (activeTab === 'locations') {
@@ -169,7 +151,6 @@ function App() {
                 key={refreshKey}
                 onView={(id) => { setSelectedId(id); setView('detail'); }}
                 onEdit={(id) => { setSelectedId(id); setView('form'); }}
-                onDelete={handleDeleteLocation}
                 onAdd={handleAdd}
               />
             </>

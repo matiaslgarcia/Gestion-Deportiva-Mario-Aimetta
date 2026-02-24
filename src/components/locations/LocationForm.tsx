@@ -61,7 +61,7 @@ export function LocationForm({ location, onSave, onCancel }: LocationFormProps) 
     if (formData.phone.trim() && !/^[\d\s\-+()]+$/.test(formData.phone.trim())) {
       newErrors.phone = 'El formato del teléfono no es válido';
     }
-    
+
     return newErrors;
   };
 

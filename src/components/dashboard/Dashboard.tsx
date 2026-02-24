@@ -3,7 +3,7 @@ import { Client } from '../../types';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
 import { Users, CheckCircle, AlertCircle, Clock, Search, ChevronRight, Eye, TrendingUp, Activity } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
-import { format} from 'date-fns';
+import { getNextPaymentDateString } from '../../utils/date';
 import { api } from '../../lib/api';
 
 interface DashboardMetrics {
@@ -315,7 +315,7 @@ export function Dashboard({ onClientClick }: DashboardProps) {
           >
             <div className="flex-1">
               <p className="font-semibold text-gray-900 text-lg group-hover:text-red-700 transition-colors">{client.name} {client.surname}</p>
-              <p className="text-sm text-gray-600 mt-1">Vencimiento: <span className="font-medium text-red-600">{format(new Date(client.payment_date), 'dd/MM/yyyy')}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Próximo pago: <span className="font-medium text-red-600">{getNextPaymentDateString(client.last_payment ?? client.payment_date)}</span></p>
             </div>
             <div className="flex items-center space-x-3">
               <span className="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md">
@@ -362,7 +362,7 @@ export function Dashboard({ onClientClick }: DashboardProps) {
           >
             <div className="flex-1">
               <p className="font-semibold text-gray-900 text-lg group-hover:text-yellow-700 transition-colors">{client.name} {client.surname}</p>
-              <p className="text-sm text-gray-600 mt-1">Vencimiento: <span className="font-medium text-yellow-600">{format(new Date(client.payment_date), 'dd/MM/yyyy')}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Próximo pago: <span className="font-medium text-yellow-600">{getNextPaymentDateString(client.last_payment ?? client.payment_date)}</span></p>
             </div>
             <div className="flex items-center space-x-3">
               <span className="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md">
@@ -409,7 +409,7 @@ export function Dashboard({ onClientClick }: DashboardProps) {
           >
             <div className="flex-1">
               <p className="font-semibold text-gray-900 text-lg group-hover:text-green-700 transition-colors">{client.name} {client.surname}</p>
-              <p className="text-sm text-gray-600 mt-1">Próximo pago: <span className="font-medium text-green-600">{format(new Date(client.payment_date), 'dd/MM/yyyy')}</span></p>
+              <p className="text-sm text-gray-600 mt-1">Próximo pago: <span className="font-medium text-green-600">{getNextPaymentDateString(client.last_payment ?? client.payment_date)}</span></p>
             </div>
             <div className="flex items-center space-x-3">
               <span className="inline-flex items-center px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md">

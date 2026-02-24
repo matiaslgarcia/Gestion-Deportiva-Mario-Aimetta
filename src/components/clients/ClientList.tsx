@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Location, Group } from '../../types';
 import { PaymentStatusBadge } from '../layout/PaymentStatusBadge';
 import { getPaymentStatusColor } from '../../utils/paymentStatus';
@@ -9,6 +9,17 @@ import { SkeletonLoader } from '../shared/SkeletonLoader';
 import { api, ClientWithRelations } from '../../lib/api';
 
 type ExtendedClient = ClientWithRelations;
+
+function useDebouncedValue<T>(value: T, delay = 300) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 interface ClientListProps {
   onView: (id: string) => void;
@@ -35,7 +46,7 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
 
   // Paginado
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -106,35 +117,49 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
   };
   const normalizeDNI = (dni: string) => dni.replace(/\D/g, '');
 
-  const filteredClients = clients.filter(client => {
-    if (dniFilter && !normalizeDNI(client.dni).includes(normalizeDNI(dniFilter))) {
-      return false;
-    }
-    const fullName = `${client.name} ${client.surname}`.toLowerCase();
-    if (nameFilter && !fullName.includes(nameFilter.toLowerCase().trim())) {
-      return false;
-    }
-    if (locationFilter) {
-      if (!client.locations?.some((l) => l.id === locationFilter)) return false;
-    }
-    if (groupFilter) {
-      if (!client.groups?.some((g) => g.id === groupFilter)) return false;
-    }
-    const realTimeStatus = getPaymentStatusColor(client.payment_date, client.last_payment);
-    const status = mapPaymentStatus(realTimeStatus);
-    if (paymentFilter !== 'all' && status !== paymentFilter) return false;
-    return true;
-  });
+  const debouncedDniFilter = useDebouncedValue(dniFilter);
+  const debouncedNameFilter = useDebouncedValue(nameFilter);
+
+  const normalizedDniFilter = useMemo(() => normalizeDNI(debouncedDniFilter), [debouncedDniFilter]);
+  const normalizedNameFilter = useMemo(() => debouncedNameFilter.toLowerCase().trim(), [debouncedNameFilter]);
+
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      if (normalizedDniFilter && !normalizeDNI(client.dni).includes(normalizedDniFilter)) {
+        return false;
+      }
+      const fullName = `${client.name} ${client.surname}`.toLowerCase();
+      if (normalizedNameFilter && !fullName.includes(normalizedNameFilter)) {
+        return false;
+      }
+      if (locationFilter) {
+        if (!client.locations?.some((l) => l.id === locationFilter)) return false;
+      }
+      if (groupFilter) {
+        if (!client.groups?.some((g) => g.id === groupFilter)) return false;
+      }
+      const realTimeStatus = getPaymentStatusColor(client.payment_date, client.last_payment);
+      const status = mapPaymentStatus(realTimeStatus);
+      if (paymentFilter !== 'all' && status !== paymentFilter) return false;
+      return true;
+    });
+  }, [clients, normalizedDniFilter, normalizedNameFilter, locationFilter, groupFilter, paymentFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dniFilter, nameFilter, locationFilter, paymentFilter, groupFilter]);
+  }, [debouncedDniFilter, debouncedNameFilter, locationFilter, paymentFilter, groupFilter, rowsPerPage]);
 
-  const totalPages = Math.ceil(filteredClients.length / rowsPerPage);
-  const paginatedClients = filteredClients.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const totalPages = useMemo(() => Math.ceil(filteredClients.length / rowsPerPage), [filteredClients.length, rowsPerPage]);
+  const paginatedClients = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredClients.slice(start, start + rowsPerPage);
+  }, [filteredClients, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleDeleteClick = (id: string) => {
     setDeleteId(id);
@@ -337,8 +362,21 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
             </table>
           </div>
         </div>
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -356,8 +394,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Vista de cards para móvil y tablet */}
@@ -461,8 +500,21 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
             </div>
           </div>
         ))}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -480,8 +532,9 @@ export function ClientList({ onView, onEdit, onDelete, onAdd, isActive = true, o
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {showConfirm && (

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Location } from '../../types';
-import { ConfirmDialog } from '../layout/ConfirmDialog';
+import { TransferModal } from './TransferModal';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
 import { SkeletonLoader } from '../shared/SkeletonLoader';
 import { api } from '../../lib/api';
@@ -8,11 +8,10 @@ import { api } from '../../lib/api';
 interface LocationListProps {
   onView: (id: string) => void;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
   onAdd: () => void;
 }
 
-export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListProps) {
+export function LocationList({ onView, onEdit, onAdd }: LocationListProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   // Filtros
@@ -23,10 +22,9 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
 
   // Paginado
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
   useEffect(() => {
     fetchLocations();
@@ -44,39 +42,48 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
   };
 
   const handleDeleteClick = (id: string) => {
-    setDeleteId(id);
-    setShowConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (deleteId) {
-      onDelete(deleteId);
+    const loc = locations.find(l => l.id === id);
+    if (loc) {
+      setLocationToDelete(loc);
     }
-    setShowConfirm(false);
-    setDeleteId(null);
   };
 
-  const handleCancelDelete = () => {
-    setShowConfirm(false);
-    setDeleteId(null);
+  const handleTransferSuccess = () => {
+    setLocationToDelete(null);
+    fetchLocations();
   };
 
-  const filteredLocations = locations.filter(location => {
-    if (nameFilter && location.name !== nameFilter) return false;
-    if (addressFilter && !location.address.toLowerCase().includes(addressFilter.toLowerCase())) return false;
-    // Filtrado por grupo si se requiere
-    return true;
-  });
+  const [addressInput, setAddressInput] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAddressFilter(addressInput), 300);
+    return () => clearTimeout(timer);
+  }, [addressInput]);
+
+  const normalizedAddressFilter = useMemo(() => addressFilter.toLowerCase(), [addressFilter]);
+  const filteredLocations = useMemo(() => {
+    return locations.filter(location => {
+      if (nameFilter && location.name !== nameFilter) return false;
+      if (normalizedAddressFilter && !location.address.toLowerCase().includes(normalizedAddressFilter)) return false;
+      return true;
+    });
+  }, [locations, nameFilter, normalizedAddressFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [nameFilter, addressFilter]);
+  }, [nameFilter, addressFilter, rowsPerPage]);
 
-  const totalPages = Math.ceil(filteredLocations.length / rowsPerPage);
-  const paginatedLocations = filteredLocations.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const totalPages = useMemo(() => Math.ceil(filteredLocations.length / rowsPerPage), [filteredLocations.length, rowsPerPage]);
+  const paginatedLocations = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredLocations.slice(start, start + rowsPerPage);
+  }, [filteredLocations, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   if (loading) {
     return <SkeletonLoader type="table" />;
@@ -119,8 +126,8 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
           <input
             type="text"
             placeholder="Filtrar por Dirección"
-            value={addressFilter}
-            onChange={(e) => setAddressFilter(e.target.value)}
+            value={addressInput}
+            onChange={(e) => setAddressInput(e.target.value)}
             className="border rounded p-2 text-sm"
           />
         </div>
@@ -184,8 +191,21 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
           </div>
         </div>
         {/* Paginado para desktop */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -203,8 +223,9 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
       {/* Vista de cards para móvil y tablet */}
       <div className="lg:hidden space-y-4">
@@ -265,8 +286,21 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
           </div>
         )}
         {/* Controles de paginado para mobile */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -284,16 +318,18 @@ export function LocationList({ onView, onEdit, onDelete, onAdd }: LocationListPr
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
-      {showConfirm && (
-        <ConfirmDialog
-          message="¿Estás seguro que quieres eliminar esta sede?"
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-        />
-      )}
+      
+      <TransferModal
+        isOpen={!!locationToDelete}
+        onClose={() => setLocationToDelete(null)}
+        sourceLocationId={locationToDelete?.id || ''}
+        sourceLocationName={locationToDelete?.name || ''}
+        onSuccess={handleTransferSuccess}
+      />
     </div>
   );
 }

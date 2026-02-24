@@ -54,7 +54,7 @@ export const handler: Handler = async (event) => {
   }
 
   if (event.httpMethod === 'POST') {
-    const body = parseJsonBody<LocationPayload>(event.body);
+    const body = parseJsonBody<LocationPayload>(event.body ?? undefined);
     if (!body) return badRequest('Body inválido');
 
     const exists = await pool.query(
@@ -76,7 +76,7 @@ export const handler: Handler = async (event) => {
 
   if (event.httpMethod === 'PUT') {
     if (!id) return badRequest('Falta query param: id');
-    const body = parseJsonBody<LocationPayload>(event.body);
+    const body = parseJsonBody<LocationPayload>(event.body ?? undefined);
     if (!body) return badRequest('Body inválido');
 
     const exists = await pool.query(
@@ -107,4 +107,3 @@ export const handler: Handler = async (event) => {
 
   return methodNotAllowed();
 };
-

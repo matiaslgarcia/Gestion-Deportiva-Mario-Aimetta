@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Group, Location } from '../../types';
 import { ConfirmDialog } from '../layout/ConfirmDialog';
 import { Edit, Trash, Filter, Plus } from 'lucide-react';
@@ -25,7 +25,7 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
 
   // Paginado
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -67,21 +67,29 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
       }
   };
 
-  const filteredGroups = groups.filter((group) => {
-    if (nameFilter && group.name !== nameFilter) return false;
-    if (locationFilter && group.location_id !== locationFilter) return false;
-    return true;
-  });
+  const filteredGroups = useMemo(() => {
+    return groups.filter((group) => {
+      if (nameFilter && group.name !== nameFilter) return false;
+      if (locationFilter && group.location_id !== locationFilter) return false;
+      return true;
+    });
+  }, [groups, nameFilter, locationFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [nameFilter, locationFilter]);
+  }, [nameFilter, locationFilter, rowsPerPage]);
 
-  const totalPages = Math.ceil(filteredGroups.length / rowsPerPage);
-  const paginatedGroups = filteredGroups.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
+  const totalPages = useMemo(() => Math.ceil(filteredGroups.length / rowsPerPage), [filteredGroups.length, rowsPerPage]);
+  const paginatedGroups = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredGroups.slice(start, start + rowsPerPage);
+  }, [filteredGroups, currentPage, rowsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleDeleteClick = (id: string) => {
     setDeleteId(id);
@@ -231,8 +239,21 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
           </div>
         </div>
         {/* Paginado para desktop */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -250,8 +271,9 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
       {/* Vista de cards para móvil y tablet */}
       <div className="lg:hidden space-y-4">
@@ -324,8 +346,21 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
           </div>
         )}
         {/* Controles de paginado para mobile */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-wrap justify-between items-center mt-4 gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700">Filas:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -343,8 +378,9 @@ export function GroupList({ onView, onEdit, onDelete, onAdd }: GroupListProps) {
             >
               Siguiente
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {showConfirm && (

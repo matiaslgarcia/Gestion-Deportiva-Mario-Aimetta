@@ -114,7 +114,17 @@ export const api = {
     delete: (id: string) =>
       requestJson<{ ok: true }>(`/locations?id=${encodeURIComponent(id)}`, { method: 'DELETE' }).then(
         () => undefined
-      )
+      ),
+    transferAndDelete: (payload: {
+      sourceLocationId: string;
+      targetLocationId: string;
+      clientIds: string[] | 'all';
+      targetCapacityTotal?: number | null;
+    }) =>
+      requestJson<{ success: true; message: string; details: unknown; report?: unknown }>('/location-transfer', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
   },
   groups: {
     list: () => requestJson<{ groups: GroupWithMeta[] }>('/groups').then((r) => r.groups),
